@@ -1,4 +1,4 @@
-name := """query-gw"""
+name := """ehealth-sample-spark-vdc"""
 
 version := "1.0-SNAPSHOT"
 

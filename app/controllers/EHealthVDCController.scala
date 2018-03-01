@@ -1,6 +1,8 @@
 package controllers
 
 import javax.inject.Inject
+import javax.inject._
+import play.api.Configuration
 
 import scala.concurrent.Future
 
@@ -8,25 +10,28 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
 import play.api.i18n.MessagesApi
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Controller}
-import bootstrap.Init
 import scala.util.parsing.json.JSONObject
 import scala.collection.mutable.ArrayBuffer
 
-class EHealthVDCController @Inject()(implicit webJarAssets: WebJarAssets,
+import bootstrap.Init
+
+// TODO thread pool!!!
+
+class EHealthVDCController @Inject() (config: Configuration, initService: Init) (implicit webJarAssets: WebJarAssets,
     val messagesApi: MessagesApi) extends Controller {
 
 
 def readData(spark: SparkSession): Unit = {
-   val bloodTestsDF = spark.read.parquet("s3a://ditas.dummy-example/ditas-blood-tests.parquet")
+   val bloodTestsDF = spark.read.parquet(config.getString("s3.filename").get)
    // Displays the content of the DataFrame to stdout
    bloodTestsDF.show(false)
    bloodTestsDF.printSchema
    bloodTestsDF.createOrReplaceTempView("bloodTests")
 
-   val table = "patient"
-   val user = USERNAME
-   val password = PASSWORD
-   val jdbcConnectionString = "jdbc:mysql://MYSQL_HOST/ditas_dummy_example?autoReconnect=true&useSSL=false"
+   val table = config.getString("db.mysql.table").getOrElse("patient")
+   val user = config.getString("db.mysql.username").get
+   val password = config.getString("db.mysql.password").get
+   val jdbcConnectionString = config.getString("db.mysql.url").get
 
    val patientsDF = spark.read.format("jdbc")
                         .option("url", jdbcConnectionString)
@@ -43,7 +48,7 @@ def readData(spark: SparkSession): Unit = {
 }
 
 def getPatientDetails(socialId: String): Action[AnyContent] = { Action.async {
-   val spark = Init.getSparkSessionInstance
+   val spark = initService.getSparkSessionInstance
    readData(spark)
    val query = "select patientId, name, surname from patients where socialId='%s'".format(socialId)
    val patientDetailsDF = spark.sql(query)
@@ -55,7 +60,7 @@ def getPatientDetails(socialId: String): Action[AnyContent] = { Action.async {
 }
 
 def getTestValues(patientId: String, testType: String): Action[AnyContent] = { Action.async {
-   val spark = Init.getSparkSessionInstance
+   val spark = initService.getSparkSessionInstance
    readData(spark)
    val query = "select patientId, date, %s.value as %s from bloodTests where patientId='%s'".format(testType, testType, patientId)
    val patientBloodTestsDF = spark.sql(query)
