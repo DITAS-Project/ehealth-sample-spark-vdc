@@ -26,7 +26,9 @@ libraryDependencies ++= {
   		"org.apache.spark" % "spark-sql_2.11" % sparkVersion % "provided",
                 "org.apache.hadoop" % "hadoop-aws" % hadoopVersion % "provided",
                 "com.amazonaws" % "aws-java-sdk-bundle" % "1.11.313",
-                "mysql" % "mysql-connector-java" % "6.0.6"
+                "mysql" % "mysql-connector-java" % "6.0.6",
+                 "org.scalatest" %% "scalatest" % "3.0.5" % Test,                
+                specs2 % Test
 	)
 }
 
