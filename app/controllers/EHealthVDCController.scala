@@ -1,35 +1,36 @@
 package controllers
 
+
+import javax.inject.Inject
+
+import io.swagger.annotations._
+import play.api.Logger
+import play.api.libs.json.Json
+import play.api.mvc._
+
 import scala.concurrent.Future
 
 import org.apache.spark.sql.SparkSession
 
 import bootstrap.Init
-import javax.inject._
-import javax.inject.Inject
 import play.api.Configuration
-import play.api.i18n.MessagesApi
 import play.api.libs.json.Json
-import play.api.mvc.Action
-import play.api.mvc.AnyContent
-import play.api.mvc.Controller
 
 // TODO thread pool!!!
-
-class EHealthVDCController @Inject() (config: Configuration, initService: Init)(implicit
-  webJarAssets: WebJarAssets, val messagesApi: MessagesApi) extends Controller {
+@Api("EHealthVDCController")
+class EHealthVDCController @Inject() (config: Configuration, initService: Init) extends InjectedController {
 
   def readData(spark: SparkSession): Unit = {
-    val bloodTestsDF = spark.read.parquet(config.getString("s3.filename").get)
+    val bloodTestsDF = spark.read.parquet(config.get[String]("s3.filename"))
     // Displays the content of the DataFrame to stdout
     bloodTestsDF.show(false)
     bloodTestsDF.printSchema
     bloodTestsDF.createOrReplaceTempView("bloodTests")
 
-    val table = config.getString("db.mysql.table").getOrElse("patient")
-    val user = config.getString("db.mysql.username").get
-    val password = config.getString("db.mysql.password").get
-    val jdbcConnectionString = config.getString("db.mysql.url").get
+    val table = config.get[String]("db.mysql.table")
+    val user = config.get[String]("db.mysql.username")
+    val password = config.get[String]("db.mysql.password")
+    val jdbcConnectionString = config.get[String]("db.mysql.url")
 
     val patientsDF = spark.read.format("jdbc")
       .option("url", jdbcConnectionString)
@@ -45,8 +46,17 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init)(
     joinedDF.createOrReplaceTempView("joined")
   }
 
-  def getPatientDetails(socialId: String): Action[AnyContent] = {
-    Action.async {
+
+  @ApiOperation(nickname = "getPatientDetails",
+    value = "Get patient details",
+    notes = "",
+    response = classOf[models.Patient], responseContainer = "List", httpMethod = "GET")
+  @ApiResponses(Array(
+      new ApiResponse(code = 400, message = "Invalid social ID value"))) 
+  def getPatientDetails(
+      @ApiParam(value = "Social ID", required = true,
+                        allowMultiple = false) socialId: String) = Action.async { 
+    implicit request => 
       val spark = initService.getSparkSessionInstance
       readData(spark)
       val query = "select patientId, socialId, addressCity, addressRoad, addressRoadNumber, birthCity, nationality, job, schoolYears, " +
@@ -56,7 +66,6 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init)(
 
       val rawJson = patientDetailsDF.toJSON.collect().mkString
       Future.successful(Ok(Json.toJson(rawJson)))
-    }
   }
 
   def getTestValues(socialId: String, testType: String): Action[AnyContent] = {

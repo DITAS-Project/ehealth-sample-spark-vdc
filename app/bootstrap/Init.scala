@@ -17,15 +17,15 @@ class Init @Inject() (lifecycle: ApplicationLifecycle, config: Configuration) {
    * On start load the  SparkSession
    */
   private var sparkSession = SparkSession.builder
-    .master(config.getString("spark.master").get)
-    .appName(config.getString("spark.app.name").get)
-    .config("spark.jars", config.getString("spark.jars").get)
-    .config("spark.hadoop.fs.s3a.endpoint", config.getString("spark.hadoop.fs.s3a.endpoint").get)
-    .config("spark.hadoop.fs.s3a.access.key", config.getString("spark.hadoop.fs.s3a.access.key").get)
-    .config("spark.hadoop.fs.s3a.secret.key", config.getString("spark.hadoop.fs.s3a.secret.key").get)
-    .config("spark.hadoop.fs.s3a.path.style.access", config.getString("spark.hadoop.fs.s3a.path.style.access").get)
-    .config("spark.hadoop.fs.s3a.impl", config.getString("spark.hadoop.fs.s3a.impl").get)
-    .config("spark.hadoop.fs.AbstractFileSystem.s3a.impl", config.getString("spark.hadoop.fs.AbstractFileSystem.s3a.impl").get)
+    .master(config.get[String]("spark.master"))
+    .appName(config.get[String]("spark.app.name"))
+    .config("spark.jars", config.get[String]("spark.jars"))
+    .config("spark.hadoop.fs.s3a.endpoint", config.get[String]("spark.hadoop.fs.s3a.endpoint"))
+    .config("spark.hadoop.fs.s3a.access.key", config.get[String]("spark.hadoop.fs.s3a.access.key"))
+    .config("spark.hadoop.fs.s3a.secret.key", config.get[String]("spark.hadoop.fs.s3a.secret.key"))
+    .config("spark.hadoop.fs.s3a.path.style.access", config.get[String]("spark.hadoop.fs.s3a.path.style.access"))
+    .config("spark.hadoop.fs.s3a.impl", config.get[String]("spark.hadoop.fs.s3a.impl"))
+    .config("spark.hadoop.fs.AbstractFileSystem.s3a.impl", config.get[String]("spark.hadoop.fs.AbstractFileSystem.s3a.impl"))
     .getOrCreate()
   Logger.info("Starting VDCMethods application")
 
