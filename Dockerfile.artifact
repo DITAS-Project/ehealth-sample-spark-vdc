@@ -1,6 +1,7 @@
 FROM java:8-jre-alpine
 COPY .application.conf /conf/application.conf
-COPY target/scala-2.11/ehealth-sample-spark-vdc-assembly-1.0-SNAPSHOT.jar /app/ehealth-sample-spark-vdc-assembly-1.0-SNAPSHOT.jar
+COPY target/universal/ehealth-sample-spark-vdc-1.0-SNAPSHOT.zip /app/ehealth-sample-spark-vdc-1.0-SNAPSHOT.zip
 EXPOSE 9000
-ENTRYPOINT ["java", "-Dplay.http.secret.key='wspl4r'", "-jar", "\/app\/ehealth-sample-spark-vdc-assembly-1.0-SNAPSHOT.jar"]
-
+RUN apt-get update && apt-get install -y unzip
+ENTRYPOINT ["unzip", "/app/ehealth-sample-spark-vdc-1.0-SNAPSHOT.zip"]
+ENTRYPOINT ["\/app\/ehealth-sample-spark-vdc-1.0-SNAPSHOT\/bin\/ehealth-sample-spark-vdc", "-Dconfig.file='\/conf\/production.conf'"]
