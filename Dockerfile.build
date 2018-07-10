@@ -1,5 +1,5 @@
 FROM java:latest
-ENV SCALA_VERSION 2.12.4
+ENV SCALA_VERSION 2.11.7 
 ENV SBT_VERSION 1.1.2
 ENV SBT_OPTS -Xmx2G -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled -Xss2M -Duser.timezone=GMT
 # install sbt
@@ -9,6 +9,7 @@ RUN dpkg -i sbt-$SBT_VERSION.deb
 RUN wget https://downloads.typesafe.com/scala/$SCALA_VERSION/scala-$SCALA_VERSION.deb
 RUN dpkg -i scala-$SCALA_VERSION.deb
 # fetch base dependencies
+
 
 # As this is an image for building, the compilation should be a sste {} in the pipeline.
 #RUN sbt -Dsbt.global.base=.sbt -Dsbt.boot.directory=.sbt -Dsbt.ivy.home=.ivy2 compile

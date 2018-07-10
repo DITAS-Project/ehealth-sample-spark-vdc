@@ -4,7 +4,7 @@ version := "1.0-SNAPSHOT"
 
 lazy val root = (project in file(".")).enablePlugins(PlayScala)
 
-scalaVersion := "2.12.4"
+scalaVersion := "2.11.7"
 
 libraryDependencies ++= {
 	val sparkVersion = "2.3.0"
@@ -22,10 +22,10 @@ libraryDependencies ++= {
     		"org.codehaus.janino" % "janino" % "3.0.8",
                 guice,
                 "org.apache.hadoop" % "hadoop-client" % hadoopVersion,
-  		"org.apache.spark" % "spark-core_2.11" % sparkVersion % "provided" exclude("org.apache.hadoop","hadoop-client"),
-  		"org.apache.spark" % "spark-sql_2.11" % sparkVersion % "provided",
-                "org.apache.hadoop" % "hadoop-aws" % hadoopVersion % "provided",
-                "com.amazonaws" % "aws-java-sdk-bundle" % "1.11.313",
+  		"org.apache.spark" % "spark-core_2.11" % sparkVersion exclude("org.apache.hadoop","hadoop-client"),
+  		"org.apache.spark" % "spark-sql_2.11" % sparkVersion,
+                "org.apache.hadoop" % "hadoop-aws" % hadoopVersion,
+                "com.amazonaws" % "aws-java-sdk-bundle" % "1.11.323",
                 "mysql" % "mysql-connector-java" % "6.0.6",
                  "org.scalatest" %% "scalatest" % "3.0.5" % Test,                
                 specs2 % Test
@@ -33,8 +33,8 @@ libraryDependencies ++= {
 }
 
 libraryDependencies ~= { _.map(_.exclude("org.slf4j", "slf4j-log4j12")) }
-libraryDependencies ~= { _.map(_.exclude("com.fasterxml.jackson.module", "jackson-module-scala_2.11")) }
-libraryDependencies ~= { _.map(_.exclude("org.scala-lang.modules", "scala-parser-combinators_2.11")) }
+// libraryDependencies ~= { _.map(_.exclude("com.fasterxml.jackson.module", "jackson-module-scala_2.11")) }
+// libraryDependencies ~= { _.map(_.exclude("org.scala-lang.modules", "scala-parser-combinators_2.11")) }
 
 mainClass in assembly := Some("play.core.server.ProdServerStart")
 fullClasspath in assembly += Attributed.blank(PlayKeys.playPackageAssets.value)

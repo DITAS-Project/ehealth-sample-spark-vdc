@@ -23,7 +23,7 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init) 
   def readData(spark: SparkSession): Unit = {
     val bloodTestsDF = spark.read.parquet(config.get[String]("s3.filename"))
     // Displays the content of the DataFrame to stdout
-    bloodTestsDF.show(false)
+//    bloodTestsDF.limit(5).show(false)
     bloodTestsDF.printSchema
     bloodTestsDF.createOrReplaceTempView("bloodTests")
 
@@ -38,7 +38,7 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init) 
       .option("user", user)
       .option("password", password)
       .load()
-    patientsDF.show(false)
+//    patientsDF.limit(5).show(false)
     patientsDF.printSchema
     patientsDF.createOrReplaceTempView("patients")
 
@@ -74,10 +74,11 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init) 
       readData(spark)
       val query = "select patientId, date, %s.value as %s from joined where socialId='%s'".format(testType, testType, socialId)
       val patientBloodTestsDF = spark.sql(query)
-      patientBloodTestsDF.show(false)
+      patientBloodTestsDF.limit(10).show(false)
       patientBloodTestsDF.printSchema
+       patientBloodTestsDF.explain(true)
 
-      val rawJson = patientBloodTestsDF.toJSON.collect().mkString
+      val rawJson = patientBloodTestsDF.limit(10).toJSON.collect().mkString
       Future.successful(Ok(Json.toJson(rawJson)))
     }
   }
@@ -90,10 +91,10 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init) 
       "cholesterol.tryglicerides.value as tryglicerides, fibrinogen.value as fibrinogen, haemoglobin.value as haemoglobin, plateletCount.value as plateletCount, " +
       "prothrombinTime.value as prothrombinTime, totalWhiteCellCount.value as totalWhiteCellCount from joined where socialId='%s'".format(socialId)
       val patientBloodTestsDF = spark.sql(query)
-      patientBloodTestsDF.show(false)
+      patientBloodTestsDF.limit(10).show(false)
       patientBloodTestsDF.printSchema
 
-      val rawJson = patientBloodTestsDF.toJSON.collect().mkString
+      val rawJson = patientBloodTestsDF.limit(10).toJSON.collect().mkString
       Future.successful(Ok(Json.toJson(rawJson)))
     }
   }
@@ -104,10 +105,10 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init) 
       readData(spark)
       val query = "select AVG(%s.value) from joined where schoolYears>%d AND schoolYears<%d".format(minSchoolYears, maxSchoolYears)
       val patientBloodTestsDF = spark.sql(query)
-      patientBloodTestsDF.show(false)
+      patientBloodTestsDF.limit(10).show(false)
       patientBloodTestsDF.printSchema
 
-      val rawJson = patientBloodTestsDF.toJSON.collect().mkString
+      val rawJson = patientBloodTestsDF.limit(10).toJSON.collect().mkString
       Future.successful(Ok(Json.toJson(rawJson)))
     }  
   }

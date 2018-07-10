@@ -1,6 +1,6 @@
 FROM java:8-jre-alpine
 COPY .application.conf /conf/application.conf
-COPY target/scala-2.12/ehealth-sample-spark-vdc-assembly-1.0-SNAPSHOT.jar /app/ehealth-sample-spark-vdc-assembly-1.0-SNAPSHOT.jar
+COPY target/scala-2.11/ehealth-sample-spark-vdc-assembly-1.0-SNAPSHOT.jar /app/ehealth-sample-spark-vdc-assembly-1.0-SNAPSHOT.jar
 EXPOSE 9000
 ENTRYPOINT ["java", "-Dplay.http.secret.key='wspl4r'", "-jar", "\/app\/ehealth-sample-spark-vdc-assembly-1.0-SNAPSHOT.jar"]
 
