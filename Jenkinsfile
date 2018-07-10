@@ -12,13 +12,13 @@ pipeline {
            }
             steps {
                 echo "Compiling..."
-		sh "sbt -Dsbt.global.base=.sbt -Dsbt.boot.directory=.sbt -Dsbt.ivy.home=.ivy2 dist"
+		sh "sbt -Dsbt.global.base=.sbt -Dsbt.boot.directory=.sbt -Dsbt.ivy.home=.ivy2 universal:packageZipTarball"
                 echo "Done."
 		    
                 // Lets make the JAR available from the artifacts tab in Jenkins
 		    
                 echo "Archiving artifacts..."
-                archiveArtifacts 'target/universal/*.zip'
+                archiveArtifacts 'target/universal/*.tgz'
                 echo "Done."
 
                 // Run the tests (we don't use a different stage for improving the performance, another stage would mean another agent)
