@@ -8,7 +8,7 @@ scalaVersion := "2.11.7"
 
 libraryDependencies ++= {
 	val sparkVersion = "2.3.0"
-        val hadoopVersion = "3.1.0"
+        val hadoopVersion = "2.8.2"
  	Seq(
   		jdbc,
   		ehcache,
@@ -25,7 +25,7 @@ libraryDependencies ++= {
   		"org.apache.spark" % "spark-core_2.11" % sparkVersion exclude("org.apache.hadoop","hadoop-client"),
   		"org.apache.spark" % "spark-sql_2.11" % sparkVersion,
                 "org.apache.hadoop" % "hadoop-aws" % hadoopVersion,
-                "com.amazonaws" % "aws-java-sdk-bundle" % "1.11.323",
+                "com.amazonaws" % "aws-java-sdk-bundle" % "1.11.234",
                 "mysql" % "mysql-connector-java" % "6.0.6",
                  "org.scalatest" %% "scalatest" % "3.0.5" % Test,                
                 specs2 % Test
