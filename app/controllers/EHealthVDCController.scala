@@ -1,20 +1,15 @@
 package controllers
 
 
-import javax.inject.Inject
-
+import bootstrap.Init
 import io.swagger.annotations._
-import play.api.Logger
+import javax.inject.Inject
+import org.apache.spark.sql.SparkSession
+import play.api.Configuration
 import play.api.libs.json.Json
 import play.api.mvc._
 
 import scala.concurrent.Future
-
-import org.apache.spark.sql.SparkSession
-
-import bootstrap.Init
-import play.api.Configuration
-import play.api.libs.json.Json
 
 // TODO thread pool!!!
 @Api("EHealthVDCController")
@@ -23,7 +18,7 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init) 
   def readData(spark: SparkSession): Unit = {
     val bloodTestsDF = spark.read.parquet(config.get[String]("s3.filename"))
     // Displays the content of the DataFrame to stdout
-//    bloodTestsDF.limit(5).show(false)
+    bloodTestsDF.limit(5).show(false)
     bloodTestsDF.printSchema
     bloodTestsDF.createOrReplaceTempView("bloodTests")
 
@@ -38,7 +33,7 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init) 
       .option("user", user)
       .option("password", password)
       .load()
-//    patientsDF.limit(5).show(false)
+    patientsDF.limit(5).show(false)
     patientsDF.printSchema
     patientsDF.createOrReplaceTempView("patients")
 
@@ -47,20 +42,22 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init) 
   }
 
 
-  @ApiOperation(nickname = "getPatientDetails",
-    value = "Get patient details",
-    notes = "",
+  @ApiOperation(nickname = "getPatientBiographicalData",
+    value = "Get patient's biographical data",
+    notes = "This method returns the biographical data for the specified patient (identified via SSN), to be used by medical doctors",
     response = classOf[models.Patient], responseContainer = "List", httpMethod = "GET")
   @ApiResponses(Array(
-      new ApiResponse(code = 400, message = "Invalid social ID value"))) 
+      new ApiResponse(code = 404, message = "Patient not found")))
   def getPatientDetails(
-      @ApiParam(value = "Social ID", required = true,
+      @ApiParam(value = "SSN", required = true,
                         allowMultiple = false) socialId: String) = Action.async { 
     implicit request => 
       val spark = initService.getSparkSessionInstance
       readData(spark)
-      val query = "select patientId, socialId, addressCity, addressRoad, addressRoadNumber, birthCity, nationality, job, schoolYears, " +
-      "birthDate, gender, name, surname from patients where socialId='%s'".format(socialId)
+
+      val query = "select socialId as SSN, name, surname, gender, birthDate," +
+        " addressCity, addressRoad, addressRoadNumber, addressPostalCode, telephoneNumber, birthCity, nationality, job, schoolYears" +
+      " from patients where socialId='%s'".format(socialId)
       val patientDetailsDF = spark.sql(query)
       patientDetailsDF.show(false)
 
@@ -68,7 +65,16 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init) 
       Future.successful(Ok(Json.toJson(rawJson)))
   }
 
-  def getTestValues(socialId: String, testType: String): Action[AnyContent] = {
+  @ApiOperation(nickname = "getAllValuesForBloodTestComponent",
+    value = "Get timeseries of patient's blood test component",
+    notes =  "This method returns the collected values for a specific blood test component of a patient (identified by his SSN), to be used by medical doctors",
+    response = classOf[models.Patient], responseContainer = "List", httpMethod = "GET")
+  @ApiResponses(Array(
+    new ApiResponse(code = 404, message = "Patient not found")))
+  def getTestValues(@ApiParam(value = "SSN", required = true,
+    allowMultiple = false) socialId: String,
+                    @ApiParam(value = "component", required = true,
+                      allowMultiple = false) testType: String): Action[AnyContent] = {
     Action.async {
       val spark = initService.getSparkSessionInstance
       readData(spark)
@@ -82,12 +88,19 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init) 
       Future.successful(Ok(Json.toJson(rawJson)))
     }
   }
-  
-  def getAllTestValues(socialId: String): Action[AnyContent] = {
+
+  @ApiOperation(nickname = "getLastValuesForBloodTest",
+    value = "Get patient's latest values for all measured components",
+    notes = "This method returns the latest values of all the blood test components measured on a patient (identified by his SSN), to be used by medical doctors",
+    response = classOf[models.Patient], responseContainer = "List", httpMethod = "GET")
+  @ApiResponses(Array(
+    new ApiResponse(code = 404, message = "Patient not found")))
+  def getAllTestValues(@ApiParam(value = "SSN", required = true,
+                          allowMultiple = false) socialId: String): Action[AnyContent] = {
     Action.async {
       val spark = initService.getSparkSessionInstance
       readData(spark)
-      val query = "select antithrombin.value as antithrombin, cholesterol.hdl.value as hdl, cholesterol.ldl.value al ldl, cholesterol.total.value as cholesterol, " +
+      val query = "select date, antithrombin.value as antithrombin, cholesterol.hdl.value as hdl, cholesterol.ldl.value al ldl, cholesterol.total.value as cholesterol, " +
       "cholesterol.tryglicerides.value as tryglicerides, fibrinogen.value as fibrinogen, haemoglobin.value as haemoglobin, plateletCount.value as plateletCount, " +
       "prothrombinTime.value as prothrombinTime, totalWhiteCellCount.value as totalWhiteCellCount from joined where socialId='%s'".format(socialId)
       val patientBloodTestsDF = spark.sql(query)
@@ -98,12 +111,26 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init) 
       Future.successful(Ok(Json.toJson(rawJson)))
     }
   }
-  
-  def getTestAverage(testType: String, minSchoolYears: Int, maxSchoolYears: Int): Action[AnyContent] = {
+
+  @ApiOperation(nickname = "getBloodTestComponentAverage",
+    value = "Get average of component over an age range",
+    notes =  "This method returns the average value for a specific blood test component in a specific age range, to be used by researchers. Since data are for researchers, patients' identifiers and quasi-identifiers won't be returned, making the output of this method anonymized.",
+    response = classOf[models.Patient], responseContainer = "List", httpMethod = "GET")
+  @ApiResponses(Array(
+    new ApiResponse(code = 404, message = "Component never measured")))
+  def getTestAverage(@ApiParam(value = "component", required = true,
+    allowMultiple = false) testType: String,
+                     @ApiParam(value = "startAgeRange", required = true,
+                       allowMultiple = false) startAgeRange: Int,
+                     @ApiParam(value = "endAgeRange", required = true,
+                       allowMultiple = false) endAgeRange: Int): Action[AnyContent] = {
     Action.async {
       val spark = initService.getSparkSessionInstance
       readData(spark)
-      val query = "select AVG(%s.value) from joined where schoolYears>%d AND schoolYears<%d".format(minSchoolYears, maxSchoolYears)
+      val todayDate =  java.time.LocalDate.now
+      val minBirthDate = todayDate.minusYears(endAgeRange)
+      val maxBirthDate = todayDate.minusYears(startAgeRange)
+      val query = "select AVG(%s.value) from joined where birthDate>%d AND birthDate<%d".format(minBirthDate, maxBirthDate)
       val patientBloodTestsDF = spark.sql(query)
       patientBloodTestsDF.limit(10).show(false)
       patientBloodTestsDF.printSchema
