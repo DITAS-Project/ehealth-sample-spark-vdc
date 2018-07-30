@@ -1,7 +1,7 @@
 FROM java:8-jre-alpine
-COPY .application.conf /conf/application.conf
 COPY target/universal/ehealth-sample-spark-vdc-1.0-SNAPSHOT.tgz app/ehealth-sample-spark-vdc-1.0-SNAPSHOT.tgz
 EXPOSE 9000 
 RUN apk --update add tar
-ENTRYPOINT ["tar", "xvzf", "app/ehealth-sample-spark-vdc-1.0-SNAPSHOT.tgz"]
-ENTRYPOINT ["app\/ehealth-sample-spark-vdc-1.0-SNAPSHOT\/bin\/ehealth-sample-spark-vdc",  "-Dplay.http.secret.key='wspl4r'", "-Dconfig.file='\/conf\/application.conf'"]
+RUN ["tar", "xvzf", "app/ehealth-sample-spark-vdc-1.0-SNAPSHOT.tgz"]
+COPY .application.conf app/ehealth-sample-spark-vdc-1.0-SNAPSHOT/conf/application.conf
+ENTRYPOINT ["app\/ehealth-sample-spark-vdc-1.0-SNAPSHOT\/bin\/ehealth-sample-spark-vdc",  "-Dplay.http.secret.key='wspl4r'", "-Dconfig.file='app\/ehealth-sample-spark-vdc-1.0-SNAPSHOT\/conf\/application.conf'"]
