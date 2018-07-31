@@ -48,6 +48,7 @@ pipeline {
                 sh "which docker"
                 // This will search for a Dockerfile in the src folder and will build the image to the local repository
                 // Using latest tag to override tha newest image in the hub
+                sh "docker pull ditas/vdc-base-image:latest"
                 sh "docker build -t \"ditas/ehealth-sample-spark-vdc:latest\" -f Dockerfile.artifact ."
                 echo "Done"
             }
