@@ -9,27 +9,29 @@ scalaVersion := "2.11.7"
 libraryDependencies ++= {
 	val sparkVersion = "2.3.0"
         val hadoopVersion = "2.8.2"
- 	Seq(
-  		jdbc,
-  		ehcache,
-  		ws,
-    		"com.typesafe.play" %% "play-json" % "2.6.9",
-		"org.webjars" % "bootstrap" % "4.0.0-2",
-    		"io.swagger" %% "swagger-play2" % "1.6.0",
-    		"org.webjars" %% "webjars-play" % "2.6.3",
-    		"org.webjars" % "swagger-ui" % "3.13.0",
-    		"com.adrianhurt" %% "play-bootstrap" % "1.2-P26-B4",
-    		"org.codehaus.janino" % "janino" % "3.0.8",
-                guice,
-                "org.apache.hadoop" % "hadoop-client" % hadoopVersion,
-  		"org.apache.spark" % "spark-core_2.11" % sparkVersion exclude("org.apache.hadoop","hadoop-client"),
-  		"org.apache.spark" % "spark-sql_2.11" % sparkVersion,
-                "org.apache.hadoop" % "hadoop-aws" % hadoopVersion,
-                "com.amazonaws" % "aws-java-sdk-bundle" % "1.11.234",
-                "mysql" % "mysql-connector-java" % "6.0.6",
-                 "org.scalatest" %% "scalatest" % "3.0.5" % Test,                
-                specs2 % Test
-	)
+  Seq(
+    jdbc,
+    ehcache,
+    ws,
+    "com.typesafe.play" %% "play-json" % "2.5.7",
+    "org.webjars" % "bootstrap" % "4.0.0-2",
+    "io.swagger" %% "swagger-play2" % "1.6.0",
+    "org.webjars" %% "webjars-play" % "2.6.3",
+    "org.webjars" % "swagger-ui" % "3.13.0",
+    "com.adrianhurt" %% "play-bootstrap" % "1.2-P26-B4",
+    "org.codehaus.janino" % "janino" % "3.0.8",
+    guice,
+    "org.apache.hadoop" % "hadoop-client" % hadoopVersion,
+    "org.apache.spark" % "spark-core_2.11" % sparkVersion exclude("org.apache.hadoop","hadoop-client"),
+    "org.apache.spark" % "spark-sql_2.11" % sparkVersion,
+    "org.apache.hadoop" % "hadoop-aws" % hadoopVersion,
+    "com.amazonaws" % "aws-java-sdk-bundle" % "1.11.234",
+    "mysql" % "mysql-connector-java" % "6.0.6",
+    "org.scalatest" %% "scalatest" % "3.0.5" % Test,
+    specs2 % Test,
+    "org.yaml" % "snakeyaml" % "1.21"
+
+  )
 }
 
 libraryDependencies ~= { _.map(_.exclude("org.slf4j", "slf4j-log4j12")) }

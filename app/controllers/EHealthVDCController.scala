@@ -4,12 +4,15 @@ package controllers
 import bootstrap.Init
 import io.swagger.annotations._
 import javax.inject.Inject
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{DataFrame, SparkSession}
 import play.api.Configuration
 import play.api.libs.json.Json
 import play.api.mvc._
+import play.api.libs.json._
+import scala.collection.mutable.ArrayBuffer
 
 import scala.concurrent.Future
+import scala.util.Try
 
 // TODO thread pool!!!
 @Api("EHealthVDCController")
@@ -40,7 +43,6 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init) 
     val joinedDF = bloodTestsDF.join(patientsDF, "patientId")
     joinedDF.createOrReplaceTempView("joined")
   }
-
 
   @ApiOperation(nickname = "getPatientBiographicalData",
     value = "Get patient's biographical data",
