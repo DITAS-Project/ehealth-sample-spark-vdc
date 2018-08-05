@@ -29,12 +29,12 @@ class Init @Inject() (lifecycle: ApplicationLifecycle, config: Configuration) {
     .getOrCreate()
   Logger.info("Starting VDCMethods application")
 
-  try
+/*  try
     Class.forName("com.mysql.jdbc.Driver")
   catch {
     case e: ClassNotFoundException =>
       System.out.println("com.mysql.jdbc.Driver not found")
-  }
+  }*/
 
   lifecycle.addStopHook { () =>
     Logger.info("Stopping VDCMethods application")
