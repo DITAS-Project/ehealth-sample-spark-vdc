@@ -44,6 +44,7 @@ pipeline {
             steps {
                 echo 'Creating the image...'
                 sh "cp /home/cloudsigma/configurations/ehealth-sample-spark-vdc/.application.conf .application.conf"
+                sh "ls .application.conf"
                 archiveArtifacts 'Dockerfile.artifact'
                 sh "which docker"
                 // This will search for a Dockerfile in the src folder and will build the image to the local repository
@@ -89,6 +90,17 @@ pipeline {
 		sh './jenkins/deploy/deploy-staging.sh'
 		echo "Deploy done!"
 	   }
+	}
+	stage('check deployed container') {
+	    agent any
+                  options {
+                      // skip checking out code again
+                      skipDefaultCheckout true
+                  }
+            steps {
+              sh  " docker exec ehealth-sample-spark-vdc -u 0 -it  bash"
+            }
+
 	}
     }
 }
