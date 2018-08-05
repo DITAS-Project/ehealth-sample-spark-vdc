@@ -91,16 +91,5 @@ pipeline {
 		echo "Deploy done!"
 	   }
 	}
-	stage('check deployed container') {
-	    agent any
-                  options {
-                      // skip checking out code again
-                      skipDefaultCheckout true
-                  }
-            steps {
-              sh  " docker exec ehealth-sample-spark-vdc -u 0 -it  bash"
-            }
-
-	}
     }
 }
