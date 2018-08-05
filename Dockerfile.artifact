@@ -5,5 +5,6 @@ RUN /bin/sh -c "apk add --no-cache bash"
 RUN apk --update add tar
 RUN ["tar", "xvzf", "app/ehealth-sample-spark-vdc-1.0-SNAPSHOT.tgz", "-C", "app"]
 COPY .application.conf app/ehealth-sample-spark-vdc-1.0-SNAPSHOT/conf/application.conf
-RUN file="$(ls -1 app/ehealth-sample-spark-vdc-1.0-SNAPSHOT/conf/application.conf)" && echo $file
-ENTRYPOINT ["app/ehealth-sample-spark-vdc-1.0-SNAPSHOT/bin/ehealth-sample-spark-vdc",  "-Dplay.http.secret.key='wspl4r'", "-Dconfig.file='app/ehealth-sample-spark-vdc-1.0-SNAPSHOT/conf/application.conf'"]
+RUN
+#ENTRYPOINT ["app/ehealth-sample-spark-vdc-1.0-SNAPSHOT/bin/ehealth-sample-spark-vdc",  "-Dplay.http.secret.key='wspl4r'", "-Dconfig.file='app/ehealth-sample-spark-vdc-1.0-SNAPSHOT/conf/application.conf'"]
+ENTRYPOINT ["/bin/bash"]
