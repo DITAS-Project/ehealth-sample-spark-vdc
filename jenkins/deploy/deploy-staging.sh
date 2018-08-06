@@ -10,7 +10,6 @@ ssh -i /opt/keypairs/ditas-testbed-keypair.pem cloudsigma@31.171.247.162 << 'END
 sudo docker rm -f ehealth-sample-spark-vdc || true
 sudo docker pull ditas/ehealth-sample-spark-vdc:latest
 sudo docker run -p 50005:9000 -d  --name ehealth-sample-spark-vdc ditas/ehealth-sample-spark-vdc:latest
-sh "cp /home/cloudsigma/configurations/ehealth-sample-spark-vdc/.application.conf .application.conf"
-sudo docker exec -i ehealth-sample-spark-vdc sh -c 'cat > /app/ehealth-sample-spark-vdc-1.0-SNAPSHOT/conf/application.conf' < ./application.conf
+sudo docker exec -i ehealth-sample-spark-vdc sh -c 'cat > /app/ehealth-sample-spark-vdc-1.0-SNAPSHOT/conf/application.conf' < /home/cloudsigma/configurations/ehealth-sample-spark-vdc/.application.conf
 sudo docker exec -d ehealth-sample-spark-vdc /app/ehealth-sample-spark-vdc-1.0-SNAPSHOT/bin/ehealth-sample-spark-vdc -Dplay.http.secret.key='wspl4r' -Dconfig.file='app/ehealth-sample-spark-vdc-1.0-SNAPSHOT/conf/application.conf'
 ENDSSH
