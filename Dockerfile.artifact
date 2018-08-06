@@ -23,7 +23,6 @@ RUN set -x \
 RUN [ "$JAVA_HOME" = "$(docker-java-home)" ]
 COPY target/universal/ehealth-sample-spark-vdc-1.0-SNAPSHOT.tgz app/ehealth-sample-spark-vdc-1.0-SNAPSHOT.tgz
 EXPOSE 9000 
-RUN apk --update add tar bash && rm -rf /var/cache/apk/*
+RUN apk --update add --no-cache tar bash && rm -rf /var/cache/apk/*
 RUN ["tar", "xvzf", "app/ehealth-sample-spark-vdc-1.0-SNAPSHOT.tgz", "-C", "app"]
-COPY .application.conf app/ehealth-sample-spark-vdc-1.0-SNAPSHOT/conf/application.conf
-ENTRYPOINT ["app/ehealth-sample-spark-vdc-1.0-SNAPSHOT/bin/ehealth-sample-spark-vdc",  "-Dplay.http.secret.key='wspl4r'", "-Dconfig.file='app/ehealth-sample-spark-vdc-1.0-SNAPSHOT/conf/application.conf'"]
+ENTRYPOINT ["bash"]
