@@ -17,7 +17,8 @@ class Init @Inject() (lifecycle: ApplicationLifecycle, config: Configuration) {
    * On start load the  SparkSession
    */
   private var sparkSession = SparkSession.builder
-    .master(config.get[String]("spark.master"))
+    //.master(config.get[String]("spark.master"))
+    .master("local")
     .appName(config.get[String]("spark.app.name"))
     .config("spark.jars", config.get[String]("spark.jars"))
     .config("spark.hadoop.fs.s3a.endpoint", config.get[String]("spark.hadoop.fs.s3a.endpoint"))
