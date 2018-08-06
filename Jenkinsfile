@@ -1,6 +1,9 @@
 pipeline {
     agent none
 
+    environment {
+       VERSION = 'da0.0.1'
+    }
     stages {
 
         stage('Build') {
@@ -48,8 +51,8 @@ pipeline {
                 sh "which docker"
                 // This will search for a Dockerfile in the src folder and will build the image to the local repository
                 // Using latest tag to override tha newest image in the hub
-                sh "docker pull ditas/vdc-base-image:latest"
-                sh "docker build -t \"ditas/ehealth-sample-spark-vdc:latest\" -f Dockerfile.artifact ."
+                sh "docker pull ditas/vdc-base-image:${env.VERSION}"
+                sh "docker build -t \"ditas/ehealth-sample-spark-vdc:${env.VERSION}\" -f Dockerfile.artifact ."
                 echo "Done"
             }
         }
@@ -70,9 +73,9 @@ pipeline {
                 echo 'Login to Docker Hub as ditasgeneric...'
                 sh "docker login -u ditasgeneric -p ${password}"
                 echo "Done"
-                echo "Pushing the image ditas/ehealth-sample-spark-vdc:latest..."
+                echo "Pushing the image ditas/ehealth-sample-spark-vdc:${env.VERSION}
                 // Push the image to DockerHub
-                sh "docker push ditas/ehealth-sample-spark-vdc:latest"
+                sh "docker push ditas/ehealth-sample-spark-vdc:${env.VERSION}"
                 echo "Done"
             }
         }
