@@ -43,8 +43,6 @@ pipeline {
             } 
             steps {
                 echo 'Creating the image...'
-                sh "cp /home/cloudsigma/configurations/ehealth-sample-spark-vdc/.application.conf .application.conf"
-                sh "ls .application.conf"
                 archiveArtifacts 'Dockerfile.artifact'
                 sh "which docker"
                 // This will search for a Dockerfile in the src folder and will build the image to the local repository
