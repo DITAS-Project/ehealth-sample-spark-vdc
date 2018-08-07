@@ -7,8 +7,8 @@ lazy val root = (project in file(".")).enablePlugins(PlayScala)
 scalaVersion := "2.11.7"
 
 libraryDependencies ++= {
-	val sparkVersion = "2.3.0"
-        val hadoopVersion = "2.8.2"
+  val sparkVersion = "2.3.0"
+  val hadoopVersion = "2.8.2"
   Seq(
     jdbc,
     ehcache,
@@ -28,8 +28,7 @@ libraryDependencies ++= {
     "com.amazonaws" % "aws-java-sdk-bundle" % "1.11.234",
     "mysql" % "mysql-connector-java" % "6.0.6",
     "org.scalatest" %% "scalatest" % "3.0.5" % Test,
-    specs2 % Test,
-    "org.yaml" % "snakeyaml" % "1.21"
+    specs2 % Test
 
   )
 }
@@ -49,7 +48,7 @@ assemblyMergeStrategy in assembly := {
   case "mozilla/public-suffix-list.txt"  => MergeStrategy.last
   case PathList("org", "apache", xs @ _*) => MergeStrategy.last
   case PathList("com", "google", xs @ _*) => MergeStrategy.last
-  case PathList("META-INF", xs @ _*) => 
+  case PathList("META-INF", xs @ _*) =>
     MergeStrategy.discard
   case manifest if manifest.contains("MANIFEST.MF") =>
     // We don't need manifest files since sbt-assembly will create

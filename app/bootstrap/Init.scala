@@ -17,8 +17,7 @@ class Init @Inject() (lifecycle: ApplicationLifecycle, config: Configuration) {
    * On start load the  SparkSession
    */
   private var sparkSession = SparkSession.builder
-    //.master(config.get[String]("spark.master"))
-    .master("local")
+    .master(config.get[String]("spark.master"))
     .appName(config.get[String]("spark.app.name"))
     .config("spark.jars", config.get[String]("spark.jars"))
     .config("spark.hadoop.fs.s3a.endpoint", config.get[String]("spark.hadoop.fs.s3a.endpoint"))
@@ -29,13 +28,6 @@ class Init @Inject() (lifecycle: ApplicationLifecycle, config: Configuration) {
     .config("spark.hadoop.fs.AbstractFileSystem.s3a.impl", config.get[String]("spark.hadoop.fs.AbstractFileSystem.s3a.impl"))
     .getOrCreate()
   Logger.info("Starting VDCMethods application")
-
-/*  try
-    Class.forName("com.mysql.jdbc.Driver")
-  catch {
-    case e: ClassNotFoundException =>
-      System.out.println("com.mysql.jdbc.Driver not found")
-  }*/
 
   lifecycle.addStopHook { () =>
     Logger.info("Stopping VDCMethods application")

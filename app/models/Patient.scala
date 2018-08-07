@@ -8,21 +8,7 @@ object Patient {
   implicit val patientReads: Reads[Patient] = Json.reads[Patient]
 }
 
-
-case class Patient(                   
-	patientId: String, 
-	socialId: String, 
-	addressCity: String, 
-	addressRoad: String, 
-	addressRoadNumber: String, 
-	birthCity: String, 
-	nationality: String, 
-	job: String, 
-	schoolYears: Int, 
-	birthDate: String, 
-	gender: String, 
-	name: String, 
-	surname: String	
-)
+case class Patient(
+													@ApiModelProperty(value="json containing the result", example="[{patientId:1,cholesterol:242.0,wbc:7610]") result:       String)
 
 
