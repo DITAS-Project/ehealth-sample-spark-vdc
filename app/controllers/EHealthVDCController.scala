@@ -194,7 +194,8 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
         .addHttpHeaders("Accept" -> "application/json").withRequestTimeout(Duration.Inf).post(data)
 
       val res = Await.result(futureResponse, 100 seconds)
-      val resultStr = ProcessResultsUtils.getPatientDetailsCompilantResult(spark, res.body[String].toString, config)
+      val resultStr = ProcessResultsUtils.getAllBloodTestsTestTypeCompilantResult(spark, res.body[String].toString,
+        config, testType, patientSSN)
 
       Future.successful(Ok(resultStr))
     } else {
