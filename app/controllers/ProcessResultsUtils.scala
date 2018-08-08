@@ -126,12 +126,14 @@ object ProcessResultsUtils extends Serializable {
                                                patientSSN: String): String = {
 
   createJoinDataFrame(spark, query, config, testType, patientSSN)
-    val queryOnJoinTables = "SELECT patientId, MAX(date), %s FROM joined WHERE socialId=\"%s\" GROUP BY patientId".format(testType, patientSSN)
+   val queryOnJoinTables = "WITH joined AS (SELECT %s , patientId, date, socialId FROM joined S WHERE date=(SELECT max(DATE) FROM joined where socialId=S.socialId)) SELECT date, socialId, %s FROM joined WHERE socialId=\"%s\"".format(testType, testType, patientSSN);
     val patientBloodTestsDF = spark.sql(queryOnJoinTables).toDF().filter(row => anyNotNull(row))
     if (debugMode) {
+      println ("----------------------------")
+      println(queryOnJoinTables);
       patientBloodTestsDF.limit(10).show(false)
       patientBloodTestsDF.printSchema
-      patientBloodTestsDF.explain(true)
+//      patientBloodTestsDF.explain(true)
     }
     patientBloodTestsDF.toJSON.collect.mkString("[", ",", "]")
   }

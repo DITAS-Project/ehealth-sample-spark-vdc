@@ -52,35 +52,6 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
   private val LOGGER = LoggerFactory.getLogger("EHealthVDCController")
   val debugMode = true
 
-
-
-
-  def readData(spark: SparkSession): Unit = {
-    val bloodTestsDF = spark.read.parquet(config.get[String]("s3.filename"))
-    // Displays the content of the DataFrame to stdout
-    bloodTestsDF.limit(5).show(false)
-    bloodTestsDF.printSchema
-    bloodTestsDF.createOrReplaceTempView("bloodTests")
-
-    val table = config.get[String]("db.mysql.table")
-    val user = config.get[String]("db.mysql.username")
-    val password = config.get[String]("db.mysql.password")
-    val jdbcConnectionString = config.get[String]("db.mysql.url")
-
-    val patientsDF = spark.read.format("jdbc")
-      .option("url", jdbcConnectionString)
-      .option("dbtable", table)
-      .option("user", user)
-      .option("password", password)
-      .load()
-    patientsDF.limit(5).show(false)
-    patientsDF.printSchema
-    patientsDF.createOrReplaceTempView("patients")
-
-    val joinedDF = bloodTestsDF.join(patientsDF, "patientId")
-    joinedDF.createOrReplaceTempView("joined")
-  }
-
   @ApiOperation(nickname = "getPatientBiographicalData",
     value = "Get patient's biographical data",
     notes = "This method returns the biographical data for the specified patient (identified via SSN), to be used by medical doctors",
@@ -161,8 +132,8 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
       Future.successful(NotFound("Missing url"))
     }
   }
-  @ApiOperation(nickname = "getPatientBiographicalData",
-    value = "Get patient's biographical data",
+  @ApiOperation(nickname = "getLastValuesForBloodTest",
+    value = "Get patient's latest values for all measured components",
     notes = "This method returns the biographical data for the specified patient (identified via SSN), to be used by medical doctors",
     response = classOf[models.Patient], responseContainer = "List", httpMethod = "GET")
   @ApiResponses(Array(
@@ -172,12 +143,12 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
     val queryObject = request.body
     val patientSSN = queryObject.patientSSN
     val requesterId = queryObject.requesterId
-    var origtestType:String = "date, antithrombin.value, cholesterol.hdl.value, cholesterol.ldl.value, " +
+    var origtestType:String = "antithrombin.value, cholesterol.hdl.value, cholesterol.ldl.value, " +
       "cholesterol.total.value, cholesterol.tryglicerides.value , fibrinogen.value , haemoglobin.value , " +
       "plateletCount.value, prothrombinTime.value, totalWhiteCellCount.value  "
 
     var testType:String = origtestType.replaceAll("\\.","_")
-    val queryToEngine = "SELECT patientId, %s FROM blood_tests".format(testType)
+    val queryToEngine = "SELECT date, patientId, %s FROM blood_tests".format(testType)
 
     val data = Json.obj(
       "query" -> queryToEngine,
@@ -196,7 +167,7 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
       val res = Await.result(futureResponse, 100 seconds)
       val resultStr = ProcessResultsUtils.getAllBloodTestsTestTypeCompilantResult(spark, res.body[String].toString,
         config, testType, patientSSN)
-
+      println ("revita" + resultStr)
       Future.successful(Ok(resultStr))
     } else {
       Future.successful(NotFound("Missing url"))
