@@ -27,7 +27,7 @@ import java.util.concurrent.CompletionStage
 import play.api.libs.ws.ahc.AhcWSClient
 import akka.stream.ActorMaterializer
 import akka.actor.ActorSystem
-import models.{RequestProfileInfoForPatient,RequestBloodTestTypeForPatient}
+import models.{RequestInfoForPatient,RequestBloodTestTypeForPatient}
 import org.yaml.snakeyaml.constructor.Constructor
 import javax.inject.Inject
 
@@ -87,7 +87,7 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
     response = classOf[models.Patient], responseContainer = "List", httpMethod = "GET")
   @ApiResponses(Array(
     new ApiResponse(code = 404, message = "Patient not found")))
-  def getPatientDetails = Action.async(parse.json[RequestProfileInfoForPatient]) { request =>
+  def getPatientDetails = Action.async(parse.json[RequestInfoForPatient]) { request =>
     val spark = initService.getSparkSessionInstance
     val queryObject = request.body
     val patientSSN = queryObject.patientSSN
@@ -155,6 +155,46 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
       val res = Await.result(futureResponse, 100 seconds)
       val resultStr = ProcessResultsUtils.getBloodTestsTestTypeCompilantResult(spark, res.body[String].toString,
         config, testType, patientSSN)
+
+      Future.successful(Ok(resultStr))
+    } else {
+      Future.successful(NotFound("Missing url"))
+    }
+  }
+  @ApiOperation(nickname = "getPatientBiographicalData",
+    value = "Get patient's biographical data",
+    notes = "This method returns the biographical data for the specified patient (identified via SSN), to be used by medical doctors",
+    response = classOf[models.Patient], responseContainer = "List", httpMethod = "GET")
+  @ApiResponses(Array(
+    new ApiResponse(code = 404, message = "Patient not found")))
+  def getAllValuesForBloodTest = Action.async(parse.json[RequestInfoForPatient]) { request =>
+    val spark = initService.getSparkSessionInstance
+    val queryObject = request.body
+    val patientSSN = queryObject.patientSSN
+    val requesterId = queryObject.requesterId
+    var origtestType:String = "date, antithrombin.value, cholesterol.hdl.value, cholesterol.ldl.value, " +
+      "cholesterol.total.value, cholesterol.tryglicerides.value , fibrinogen.value , haemoglobin.value , " +
+      "plateletCount.value, prothrombinTime.value, totalWhiteCellCount.value  "
+
+    var testType:String = origtestType.replaceAll("\\.","_")
+    val queryToEngine = "SELECT patientId, %s FROM blood_tests".format(testType)
+
+    val data = Json.obj(
+      "query" -> queryToEngine,
+      "purpose" -> "Treatment",
+      "access" -> "read",
+      "requester" -> "r1",
+      "blueprintId" -> "2",
+      "requesterId" -> requesterId
+    )
+    if (config.has("policy.enforcement.play.url")) {
+      val url: String = config.get[String]("policy.enforcement.play.url")
+
+      val futureResponse = ws.url(url).addHttpHeaders("Content-Type" -> "application/json")
+        .addHttpHeaders("Accept" -> "application/json").withRequestTimeout(Duration.Inf).post(data)
+
+      val res = Await.result(futureResponse, 100 seconds)
+      val resultStr = ProcessResultsUtils.getPatientDetailsCompilantResult(spark, res.body[String].toString, config)
 
       Future.successful(Ok(resultStr))
     } else {
