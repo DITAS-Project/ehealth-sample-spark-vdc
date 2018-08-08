@@ -122,7 +122,7 @@ object ProcessResultsUtils extends Serializable {
       joinedDF.show(100)
     }
 
-    val queryOnJoinTables = "SELECT patientId, date, %s FROM joined WHERE socialId=%s".format(testType, patientSSN)
+    val queryOnJoinTables = "SELECT patientId, date, %s FROM joined WHERE socialId=\"%s\"".format(testType, patientSSN)
     val patientBloodTestsDF = spark.sql(queryOnJoinTables).toDF().filter(row => anyNotNull(row))
     if (debugMode) {
       patientBloodTestsDF.limit(10).show(false)
