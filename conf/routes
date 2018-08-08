@@ -15,3 +15,4 @@ GET	/docs/*file	controllers.Assets.at(path="/public/lib/swagger-ui/", file)
 GET	/get-patient-details	controllers.EHealthVDCController.getPatientDetails
 GET	/get-bloodtests-for-patient	controllers.EHealthVDCController.getBloodTestValuesForTestType
 GET	/get-newest-bloodtests-for-patient	controllers.EHealthVDCController.getAllValuesForBloodTest
+GET	/get-avg-bloodtests-for-patient	controllers.EHealthVDCController.getBloodTestComponentAverage

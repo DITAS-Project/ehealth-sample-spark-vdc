@@ -88,8 +88,7 @@ object ProcessResultsUtils extends Serializable {
 
   }
 
-  def createJoinDataFrame (spark: SparkSession, query:String, config: Configuration, testType: String,
-                                            patientSSN: String): Unit = {
+  def createJoinDataFrame (spark: SparkSession, query:String, config: Configuration, testType: String): Unit = {
 
     val json: JsValue = Json.parse(query)
     val table: String = new String("table")
@@ -125,23 +124,23 @@ object ProcessResultsUtils extends Serializable {
   def getAllBloodTestsTestTypeCompilantResult (spark: SparkSession, query:String, config: Configuration, testType: String,
                                                patientSSN: String): String = {
 
-  createJoinDataFrame(spark, query, config, testType, patientSSN)
-   val queryOnJoinTables = "WITH joined AS (SELECT %s , patientId, date, socialId FROM joined S WHERE date=(SELECT max(DATE) FROM joined where socialId=S.socialId)) SELECT date, socialId, %s FROM joined WHERE socialId=\"%s\"".format(testType, testType, patientSSN);
+    createJoinDataFrame(spark, query, config, testType)
+    val queryOnJoinTables = "WITH joined AS (SELECT %s , patientId, date, socialId FROM joined S WHERE date=(SELECT max(DATE) FROM joined where socialId=S.socialId)) SELECT date, socialId, %s FROM joined WHERE socialId=\"%s\"".format(testType, testType, patientSSN);
     val patientBloodTestsDF = spark.sql(queryOnJoinTables).toDF().filter(row => anyNotNull(row))
     if (debugMode) {
       println ("----------------------------")
       println(queryOnJoinTables);
       patientBloodTestsDF.limit(10).show(false)
       patientBloodTestsDF.printSchema
-//      patientBloodTestsDF.explain(true)
+      //      patientBloodTestsDF.explain(true)
     }
     patientBloodTestsDF.toJSON.collect.mkString("[", ",", "]")
   }
 
   def getBloodTestsTestTypeCompilantResult (spark: SparkSession, query:String, config: Configuration, testType: String,
-                                               patientSSN: String): String = {
+                                            patientSSN: String): String = {
 
-    createJoinDataFrame(spark, query, config, testType, patientSSN)
+    createJoinDataFrame(spark, query, config, testType)
     val queryOnJoinTables = "SELECT patientId, date, %s FROM joined WHERE socialId=\"%s\"".format(testType, patientSSN)
     val patientBloodTestsDF = spark.sql(queryOnJoinTables).toDF().filter(row => anyNotNull(row))
     if (debugMode) {
@@ -149,6 +148,24 @@ object ProcessResultsUtils extends Serializable {
       patientBloodTestsDF.printSchema
       patientBloodTestsDF.explain(true)
     }
+    patientBloodTestsDF.toJSON.collect.mkString("[", ",", "]")
+  }
+
+  def getAvgBloodTestsTestTypeCompilantResult (spark: SparkSession, query:String, config: Configuration, testType: String,
+                                               startAgeRange: Long, endAgeRange: Long) : String = {
+    val todayDate =  java.time.LocalDate.now
+    val minBirthDate = todayDate.minusYears(endAgeRange)
+    val maxBirthDate = todayDate.minusYears(startAgeRange)
+    createJoinDataFrame(spark, query, config, testType)
+
+    val queryOnJoinTables = "SELECT "+testType+" FROM joined where birthDate > \""+minBirthDate+"\" AND birthDate < \""+maxBirthDate +"\""
+    val patientBloodTestsDF = spark.sql(queryOnJoinTables).toDF().filter(row => anyNotNull(row))
+    if (debugMode) {
+      patientBloodTestsDF.limit(10).show(false)
+      patientBloodTestsDF.printSchema
+      patientBloodTestsDF.explain(true)
+    }
+    patientBloodTestsDF.show(false)
     patientBloodTestsDF.toJSON.collect.mkString("[", ",", "]")
   }
 

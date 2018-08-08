@@ -27,7 +27,7 @@ import java.util.concurrent.CompletionStage
 import play.api.libs.ws.ahc.AhcWSClient
 import akka.stream.ActorMaterializer
 import akka.actor.ActorSystem
-import models.{RequestInfoForPatient,RequestBloodTestTypeForPatient}
+import models.{RequestInfoForPatient,RequestBloodTestTypeForPatient,RequestAvgBloodTestTypeForPatient}
 import org.yaml.snakeyaml.constructor.Constructor
 import javax.inject.Inject
 
@@ -132,6 +132,7 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
       Future.successful(NotFound("Missing url"))
     }
   }
+
   @ApiOperation(nickname = "getLastValuesForBloodTest",
     value = "Get patient's latest values for all measured components",
     notes = "This method returns the biographical data for the specified patient (identified via SSN), to be used by medical doctors",
@@ -168,6 +169,52 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
       val resultStr = ProcessResultsUtils.getAllBloodTestsTestTypeCompilantResult(spark, res.body[String].toString,
         config, testType, patientSSN)
       println ("revita" + resultStr)
+      Future.successful(Ok(resultStr))
+    } else {
+      Future.successful(NotFound("Missing url"))
+    }
+  }
+
+  @ApiOperation(nickname = "getAllValuesForBloodTestComponent",
+    value = "Get timeseries of patient's blood test component",
+    notes =  "TThis method returns the average value for a specific blood test component in a specific age range, to " +
+      "be used by researchers. Since data are for researchers, patients' identifiers and quasi-identifiers won't be " +
+      "returned, making the output of this method anonymized",
+    response = classOf[models.Patient], responseContainer = "List", httpMethod = "GET")
+  @ApiResponses(Array(
+    new ApiResponse(code = 404, message = "Patient not found")))
+  def getBloodTestComponentAverage = Action.async(parse.json[RequestAvgBloodTestTypeForPatient]) { request =>
+    val spark = initService.getSparkSessionInstance
+    val queryObject = request.body
+    var origtestType:String = queryObject.bloodTestType
+    var testType:String = null
+    var avgTestType:String = null
+    if (origtestType.equals("cholesterol")) {
+      testType = "cholesterol_hdl_value, cholesterol_hdl_value, cholesterol_tryglicerides_value, cholesterol_total_value"
+      avgTestType = "AVG(cholesterol_hdl_value), AVG(cholesterol_hdl_value), AVG(cholesterol_tryglicerides_value), AVG(cholesterol_total_value)"
+    } else {
+      testType = "%s_value".format(origtestType).replaceAll("\\.", "_")
+      avgTestType = "AVG("+testType+")"
+    }
+
+    val queryToEngine = "SELECT patientId, date, %s FROM blood_tests".format(testType)
+    val data = Json.obj(
+      "query" -> queryToEngine,
+      "purpose" -> "Research",
+      "access" -> "read",
+      "requester" -> "r1",
+      "blueprintId" -> "2"
+    )
+    if (config.has("policy.enforcement.play.url")) {
+      val url: String = config.get[String]("policy.enforcement.play.url")
+
+      val futureResponse = ws.url(url).addHttpHeaders("Content-Type" -> "application/json")
+        .addHttpHeaders("Accept" -> "application/json").withRequestTimeout(Duration.Inf).post(data)
+
+      val res = Await.result(futureResponse, 100 seconds)
+      val resultStr = ProcessResultsUtils.getAvgBloodTestsTestTypeCompilantResult(spark, res.body[String].toString,
+        config, testType, queryObject.startAgeRange, queryObject.startAgeRange)
+
       Future.successful(Ok(resultStr))
     } else {
       Future.successful(NotFound("Missing url"))

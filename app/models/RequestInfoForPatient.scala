@@ -5,8 +5,8 @@ import play.api.libs.json.{Json, Reads, Writes}
 
 
 object RequestInfoForPatient {
-  implicit val requestQueryWrites: Writes[RequestInfoForPatient] = Json.writes[RequestInfoForPatient]
-  implicit val requestQueryReads: Reads[RequestInfoForPatient] = Json.reads[RequestInfoForPatient]
+  implicit val RequestInfoForPatientWrites: Writes[RequestInfoForPatient] = Json.writes[RequestInfoForPatient]
+  implicit val RequestInfoForPatientReads: Reads[RequestInfoForPatient] = Json.reads[RequestInfoForPatient]
 }
 
 
