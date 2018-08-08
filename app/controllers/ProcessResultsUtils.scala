@@ -66,7 +66,7 @@ object ProcessResultsUtils extends Serializable {
 
 
 
-  def getCompilantResult (spark: SparkSession, query:String, config: Configuration): String =
+  def getPatientDetailsCompilantResult (spark: SparkSession, query:String, config: Configuration): String =
   {
 
     val json: JsValue = Json.parse(query)
@@ -87,4 +87,50 @@ object ProcessResultsUtils extends Serializable {
     resultDataDF.toJSON.collect.mkString("[", ",", "]")
 
   }
+
+  def getBloodTestsTestTypeCompilantResult (spark: SparkSession, query:String, config: Configuration, testType: String,
+                                            patientSSN: String): String =
+  {
+
+    val json: JsValue = Json.parse(query)
+    val table: String = new String("table")
+    var index: Integer = 0;
+    var cond = true;
+    while (cond) {
+      var tableKey = table + index.toString
+      index = index + 1
+      val tableConfigName = (json \ tableKey).validate[String]
+      tableConfigName match {
+        case s: JsSuccess[String] => handleTable(spark, config, s.get);
+        case e: JsError => cond = false
+      }
+    }
+    val newQuery = (json \ "newQuery").validate[String]
+    val bloodTestsDF = spark.sql(newQuery.get).toDF().filter(row => anyNotNull(row))
+    if (debugMode) {
+      bloodTestsDF.show(1000)
+    }
+    val profilesDF = loadTableDFFromConfig(null, spark, config, "patientsProfiles")
+    if (debugMode) {
+      profilesDF.show()
+    }
+    //val joinedDF = bloodTestsDF.join(profilesDF, "patientId", "left_outer")
+    var joinedDF = bloodTestsDF.join(profilesDF, bloodTestsDF.col(Constants.SUBJECT_ID_COL_NAME).equalTo(profilesDF.col(Constants.SUBJECT_ID_COL_NAME)), "left_outer")
+    joinedDF = joinedDF.drop(profilesDF.col(Constants.SUBJECT_ID_COL_NAME))
+    joinedDF.createOrReplaceTempView("joined")
+    if (debugMode) {
+      joinedDF.show(100)
+    }
+
+    val queryOnJoinTables = "SELECT patientId, date, %s FROM joined WHERE socialId=%s".format(testType, patientSSN)
+    val patientBloodTestsDF = spark.sql(queryOnJoinTables).toDF().filter(row => anyNotNull(row))
+    if (debugMode) {
+      patientBloodTestsDF.limit(10).show(false)
+      patientBloodTestsDF.printSchema
+      patientBloodTestsDF.explain(true)
+    }
+    patientBloodTestsDF.toJSON.collect.mkString("[", ",", "]")
+  }
+
+
 }
