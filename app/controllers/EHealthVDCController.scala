@@ -131,7 +131,7 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
       index = index + 1
       val tableConfigName = (json \ tableKey).validate[String]
       tableConfigName match {
-        case s: JsSuccess[String] => handleTable(spark, connConfig, s.get);
+        case s: JsSuccess[String] => handleTable(spark, config, s.get);
         case e: JsError => cond = false
       }
     }
