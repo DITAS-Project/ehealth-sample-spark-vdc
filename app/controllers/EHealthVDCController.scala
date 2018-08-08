@@ -62,10 +62,6 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
       var dataDF: DataFrame = null
 
       dataDF = spark.read.parquet(connInfo)
-      if (debugMode) {
-        println("=============" + connInfo + " ===============")
-        dataDF.show()
-      }
       return dataDF
     }
     val url = config.get[String]("db.mysql.url")
@@ -73,10 +69,6 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
     val pass = config.get[String]("db.mysql.password")
     var jdbcDF = spark.read.format("jdbc").option("url", url).option("dbtable", connInfo).
       option("user", user).option("password", pass).load
-    if (debugMode) {
-      println("=============" + connInfo + " ===============")
-      jdbcDF.show()
-    }
     return jdbcDF
   }
 
@@ -90,7 +82,7 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
     }
     tableDF.createOrReplaceTempView(sparkName)
     if (debugMode) {
-      println("=============" + sparkName + " ===============")
+      println("============= " + sparkName + " ===============")
       tableDF.show()
     }
   }
@@ -127,7 +119,6 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
     var cond = true;
     while (cond) {
       var tableKey = table + index.toString
-      println (tableKey)
       index = index + 1
       val tableConfigName = (json \ tableKey).validate[String]
       tableConfigName match {
@@ -197,11 +188,9 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
         .addHttpHeaders("Accept" -> "application/json").withRequestTimeout(Duration.Inf).post(data)
 
       val res = Await.result(futureResponse, 100 seconds)
-      if (debugMode)
-        println("RES " + res.body[String].toString)
-      val df = getCompilantResult(spark, res.body[String].toString, config)
+      val resultDF = getCompilantResult(spark, res.body[String].toString, config)
 
-      Future.successful(Ok(Json.toJson(df.toString())))
+      Future.successful(Ok(resultDF.toJSON.collect.mkString("[", ",", "]")))
     }else {
       Future.successful(NotFound("Missing url"))
     }
