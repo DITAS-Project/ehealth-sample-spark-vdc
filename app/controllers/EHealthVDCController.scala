@@ -53,84 +53,7 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
   val debugMode = true
 
 
-  def loadTableDFFromConfig(tableFilePrefix : String, spark: SparkSession, config: Configuration,
-                            dataConfigName: String): DataFrame = {
-    LOGGER.info("PloadTableDFFromConfig")
-    println(dataConfigName)
-    val connInfo = config.get[String](dataConfigName)
-    if (connInfo.contains("s3a")) {
-      var dataDF: DataFrame = null
 
-      dataDF = spark.read.parquet(connInfo)
-      return dataDF
-    }
-    val url = config.get[String]("db.mysql.url")
-    val user = config.get[String]("db.mysql.username")
-    val pass = config.get[String]("db.mysql.password")
-    var jdbcDF = spark.read.format("jdbc").option("url", url).option("dbtable", connInfo).
-      option("user", user).option("password", pass).load
-    return jdbcDF
-  }
-
-  def handleTable (spark: SparkSession, config: Configuration,
-                   dataConfigName: String) : Unit = {
-    LOGGER.info("handleTable")
-    var tableDF = loadTableDFFromConfig(null, spark, config, dataConfigName)
-    var sparkName = dataConfigName.toString()
-    if (dataConfigName.toString().contains("clauses")) {
-      sparkName = "clauses"
-    }
-    tableDF.createOrReplaceTempView(sparkName)
-    if (debugMode) {
-      println("============= " + sparkName + " ===============")
-      tableDF.show()
-    }
-  }
-
-
-
-
-  def anyNotNull(row: Row): Boolean = {
-    val len = row.length
-
-    var i = 0
-    var fieldNames = row.schema.fieldNames
-    //print patientId if its the only col
-    if (len == 1 && fieldNames(0).equals(Constants.SUBJECT_ID_COL_NAME))
-      return true
-    //skip patientId
-    while (i < len) {
-      if (!fieldNames(i).equals(Constants.SUBJECT_ID_COL_NAME) && !row.isNullAt(i)) {
-        return true
-      }
-      i += 1
-    }
-    false
-  }
-
-
-
-  def getCompilantResult (spark: SparkSession, query:String, config: Configuration): Dataset[Row] =
-  {
-
-    val json: JsValue = Json.parse(query)
-    val table: String = new String("table")
-    var index: Integer = 0;
-    var cond = true;
-    while (cond) {
-      var tableKey = table + index.toString
-      index = index + 1
-      val tableConfigName = (json \ tableKey).validate[String]
-      tableConfigName match {
-        case s: JsSuccess[String] => handleTable(spark, config, s.get);
-        case e: JsError => cond = false
-      }
-    }
-    val newQuery = (json \ "newQuery").validate[String]
-    val resultDataDF = spark.sql(newQuery.get).toDF().filter(row => anyNotNull(row))
-    resultDataDF
-
-  }
 
   def readData(spark: SparkSession): Unit = {
     val bloodTestsDF = spark.read.parquet(config.get[String]("s3.filename"))
@@ -188,10 +111,10 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
         .addHttpHeaders("Accept" -> "application/json").withRequestTimeout(Duration.Inf).post(data)
 
       val res = Await.result(futureResponse, 100 seconds)
-      val resultDF = getCompilantResult(spark, res.body[String].toString, config)
+      val resultStr = ProcessResultsUtils.getCompilantResult(spark, res.body[String].toString, config)
 
-      Future.successful(Ok(resultDF.toJSON.collect.mkString("[", ",", "]")))
-    }else {
+      Future.successful(Ok(resultStr))
+    } else {
       Future.successful(NotFound("Missing url"))
     }
   }
