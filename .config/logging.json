@@ -1,0 +1,7 @@
+{
+    "Port":8484,
+    "ElasticSearchURL":"http://elasticserach:9200",
+    "VDCName":"ditas/ehealth-sample-spark-vdc:latest",
+    "Endpoint":"http://127.0.0.1:9000",
+    "verbose":false
+}
