@@ -171,6 +171,7 @@ object ProcessResultsUtils extends Serializable {
     val queryOnJoinTables = "SELECT "+avgTestType+" FROM joined where birthDate > \""+minBirthDate+"\" AND birthDate < \""+maxBirthDate +"\""
     val patientBloodTestsDF = spark.sql(queryOnJoinTables).toDF().filter(row => anyNotNull(row))
     if (debugMode) {
+      println ("Range: " + startAgeRange + " " + endAgeRange)
       println (queryOnJoinTables)
       patientBloodTestsDF.limit(10).show(false)
       patientBloodTestsDF.printSchema

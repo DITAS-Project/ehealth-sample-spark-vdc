@@ -219,7 +219,7 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
         avgTestType = "AVG("+newTestType+")"
       }
 
-      val queryToEngine = "SELECT patientId, date, %s FROM blood_tests".format(testType)
+      val queryToEngine = "SELECT patientId, date, %s FROM blood_tests".format(newTestType)
       val data = Json.obj(
         "query" -> queryToEngine,
         "purpose" -> "Research",
