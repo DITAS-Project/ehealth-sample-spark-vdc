@@ -50,7 +50,6 @@ import scala.concurrent.ExecutionContext
 @Api("EHealthVDCController")
 class EHealthVDCController @Inject() (config: Configuration, initService: Init, ws: WSClient) extends InjectedController {
   private val LOGGER = LoggerFactory.getLogger("EHealthVDCController")
-  val debugMode = true
 
   @ApiOperation(nickname = "getPatientBiographicalData",
     value = "Get patient's biographical data",
@@ -202,8 +201,9 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
       "query" -> queryToEngine,
       "purpose" -> "Research",
       "access" -> "read",
-      "requester" -> "r1",
-      "blueprintId" -> "2"
+      "requester" -> "",
+      "blueprintId" -> "2",
+      "requesterId" -> "" 
     )
     if (config.has("policy.enforcement.play.url")) {
       val url: String = config.get[String]("policy.enforcement.play.url")
@@ -213,7 +213,7 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
 
       val res = Await.result(futureResponse, 100 seconds)
       val resultStr = ProcessResultsUtils.getAvgBloodTestsTestTypeCompilantResult(spark, res.body[String].toString,
-        config, testType, queryObject.startAgeRange, queryObject.startAgeRange)
+        config, testType, avgTestType, queryObject.startAgeRange, queryObject.endAgeRange)
 
       Future.successful(Ok(resultStr))
     } else {

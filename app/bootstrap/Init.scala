@@ -9,6 +9,7 @@ import javax.inject.Singleton
 import play.api.Configuration
 import play.api.Logger
 import play.api.inject.ApplicationLifecycle
+import controllers.ProcessResultsUtils
 
 @Singleton
 class Init @Inject() (lifecycle: ApplicationLifecycle, config: Configuration) {
@@ -28,6 +29,8 @@ class Init @Inject() (lifecycle: ApplicationLifecycle, config: Configuration) {
     .config("spark.hadoop.fs.AbstractFileSystem.s3a.impl", config.get[String]("spark.hadoop.fs.AbstractFileSystem.s3a.impl"))
     .getOrCreate()
   Logger.info("Starting VDCMethods application")
+  if (config.has("debug.mode"))
+  ProcessResultsUtils.setDebugMode (config.get[Boolean]("debug.mode"))  
 
   lifecycle.addStopHook { () =>
     Logger.info("Stopping VDCMethods application")
