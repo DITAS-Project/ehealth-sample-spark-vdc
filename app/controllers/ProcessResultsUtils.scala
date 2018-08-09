@@ -35,7 +35,7 @@ object ProcessResultsUtils extends Serializable {
   def loadTableDFFromConfig(tableFilePrefix : String, spark: SparkSession, config: Configuration,
                             dataConfigName: String): DataFrame = {
     LOGGER.info("PloadTableDFFromConfig")
-    println(dataConfigName)
+   
     val connInfo = config.get[String](dataConfigName)
     if (connInfo.contains("s3a")) {
       var dataDF: DataFrame = null
