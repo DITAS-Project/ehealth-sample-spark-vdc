@@ -70,8 +70,8 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
       "query" -> query,
       "purpose" -> "Treatment",
       "access" -> "read",
-      "requester" -> "r1",
-      "blueprintId" -> "2",
+      "requester" -> "",
+      "blueprintId" -> "",
       "requesterId" -> requesterId
     )
     if (config.has("policy.enforcement.play.url")) {
@@ -112,8 +112,8 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
       "query" -> queryToEngine,
       "purpose" -> "Treatment",
       "access" -> "read",
-      "requester" -> "r1",
-      "blueprintId" -> "2",
+      "requester" -> "",
+      "blueprintId" -> "",
       "requesterId" -> requesterId
     )
     if (config.has("policy.enforcement.play.url")) {
@@ -154,8 +154,8 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
       "query" -> queryToEngine,
       "purpose" -> "Treatment",
       "access" -> "read",
-      "requester" -> "r1",
-      "blueprintId" -> "2",
+      "requester" -> "",
+      "blueprintId" -> "",
       "requesterId" -> requesterId
     )
     if (config.has("policy.enforcement.play.url")) {
@@ -202,8 +202,8 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
       "purpose" -> "Research",
       "access" -> "read",
       "requester" -> "",
-      "blueprintId" -> "2",
-      "requesterId" -> "" 
+      "blueprintId" -> "",
+      "requesterId" -> ""
     )
     if (config.has("policy.enforcement.play.url")) {
       val url: String = config.get[String]("policy.enforcement.play.url")
