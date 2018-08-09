@@ -162,7 +162,7 @@ object ProcessResultsUtils extends Serializable {
   }
 
   def getAvgBloodTestsTestTypeCompilantResult (spark: SparkSession, query:String, config: Configuration, testType: String, avgTestType: String,
-                                               startAgeRange: Long, endAgeRange: Long) : String = {
+                                               startAgeRange: Int, endAgeRange: Int) : String = {
     val todayDate =  java.time.LocalDate.now
     val minBirthDate = todayDate.minusYears(endAgeRange)
     val maxBirthDate = todayDate.minusYears(startAgeRange)
