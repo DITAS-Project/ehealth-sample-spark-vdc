@@ -88,7 +88,7 @@ object ProcessResultsUtils extends Serializable {
     }
     val newQuery = (json \ "newQuery").validate[String]
     if (debugMode) {
-      println("the re-written query: " + newQuery)
+      println("the re-written query: " + newQuery.get)
     }
     val resultDataDF = spark.sql(newQuery.get).toDF().filter(row => anyNotNull(row))
     resultDataDF.toJSON.collect.mkString("[", ",", "]")
@@ -112,7 +112,7 @@ object ProcessResultsUtils extends Serializable {
     }
     val newQuery = (json \ "newQuery").validate[String]
     if (debugMode) {
-      println("the re-written query: " + newQuery)
+      println("the re-written query: " + newQuery.get)
     }
     val bloodTestsDF = spark.sql(newQuery.get).toDF().filter(row => anyNotNull(row))
     if (debugMode) {
