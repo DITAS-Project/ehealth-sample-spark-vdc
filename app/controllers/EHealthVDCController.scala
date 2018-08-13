@@ -101,10 +101,17 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
       }
   }
 
+def prune(json_to_prune: JsValue, path_to_prune: String) = {
+
+     val path_to_prun = path_to_prune.split("\\.").foldLeft(JsPath())((acc,
+path)=> acc \ path)
+ json_to_prune.transform(path_to_prun.json.prune)
+}
+
   @ApiOperation(nickname = "getAllValuesForBloodTestComponent",
     value = "Get timeseries of patient's blood test component",
     notes =  "This method returns the collected values for a specific blood test component of a patient (identified by his SSN), to be used by medical doctors",
-    response = classOf[models.Patient], responseContainer = "List", httpMethod = "GET")
+    response = classOf[models.BloodTestComponents], responseContainer = "List", httpMethod = "GET")
   @ApiResponses(Array(
     new ApiResponse(code = 404, message = "Patient not found")))
   def getTestValues(@ApiParam(value = "SSN", required = true, allowMultiple = false) socialId: String,
@@ -118,11 +125,11 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
       var origtestType = testType
       var newTestType: String = null
       if (origtestType.equals("cholesterol")) {
-        newTestType = "cholesterol_hdl_value, cholesterol_hdl_value, cholesterol_tryglicerides_value, cholesterol_total_value"
+        newTestType = "cholesterol_total_value"
       } else {
-        newTestType = "%s_value".format(origtestType).replaceAll("\\.", "_")
+        newTestType = "%s_value".format(origtestType)
       }
-      val queryToEngine = "SELECT patientId, date, %s FROM blood_tests".format(testType)
+      val queryToEngine = "SELECT patientId, date, %s FROM blood_tests".format(newTestType)
       val data = Json.obj(
         "query" -> queryToEngine,
         "purpose" -> "Treatment",
@@ -140,8 +147,9 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
         val res = Await.result(futureResponse, 100 seconds)
         val resultStr = ProcessResultsUtils.getBloodTestsTestTypeCompilantResult(spark, res.body[String].toString,
           config, newTestType, patientSSN)
+        val json: JsValue = Json.parse(resultStr)
 
-        Future.successful(Ok(resultStr))
+        Future.successful(Ok(json))
       } else {
         Future.successful(NotFound("Missing url"))
       }
@@ -196,7 +204,7 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
   @ApiOperation(nickname = "getBloodTestComponentAverage",
     value = "Get average of component over an age range",
     notes =  "This method returns the average value for a specific blood test component in a specific age range, to be used by researchers. Since data are for researchers, patients' identifiers and quasi-identifiers won't be returned, making the output of this method anonymized.",
-    response = classOf[models.Patient], responseContainer = "List", httpMethod = "GET")
+    response = classOf[models.PatientAvg], responseContainer = "List", httpMethod = "GET")
   @ApiResponses(Array(
     new ApiResponse(code = 404, message = "Component never measured")))
   def getTestAverage(@ApiParam(value = "component", required = true,
@@ -212,11 +220,11 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
       var newTestType:String = null
       var avgTestType:String = null
       if (origtestType.equals("cholesterol")) {
-        newTestType = "cholesterol_hdl_value, cholesterol_hdl_value, cholesterol_tryglicerides_value, cholesterol_total_value"
-        avgTestType = "AVG(cholesterol_hdl_value), AVG(cholesterol_hdl_value), AVG(cholesterol_tryglicerides_value), AVG(cholesterol_total_value)"
+        newTestType = "cholesterol_total_value"
+        avgTestType = "avg(cholesterol_total_value)"
       } else {
         newTestType = "%s_value".format(origtestType).replaceAll("\\.", "_")
-        avgTestType = "AVG("+newTestType+")"
+        avgTestType = "avg("+newTestType+")"
       }
 
       val queryToEngine = "SELECT patientId, date, %s FROM blood_tests".format(newTestType)
@@ -235,12 +243,18 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
           .addHttpHeaders("Accept" -> "application/json").withRequestTimeout(Duration.Inf).post(data)
 
         val res = Await.result(futureResponse, 100 seconds)
-        val resultStr = ProcessResultsUtils.getAvgBloodTestsTestTypeCompilantResult(spark, res.body[String].toString,
-          config, newTestType, avgTestType, startAgeRange, endAgeRange)
+        val newJsonObj = ProcessResultsUtils.getAvgBloodTestsTestTypeCompilantResult(spark, res.body[String].toString,
+          config, newTestType, avgTestType, origtestType, startAgeRange, endAgeRange)
 
-        Future.successful(Ok(resultStr))
+        val json: JsValue = Json.parse(newJsonObj)
+/*        val avg = (json \ "%s".format(avgTestType)).as[Double]
+
+        //convert to bluprint format
+        val obj = Json.obj("value" -> avg)
+*/
+        Future.successful(Ok(json))
       } else {
-        Future.successful(NotFound("Missing url"))
+        Future.successful(NotFound("Missing config file"))
       }
   }
 }

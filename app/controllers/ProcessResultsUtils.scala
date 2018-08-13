@@ -4,6 +4,9 @@ import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}
 import org.slf4j.LoggerFactory
 import play.api.Configuration
 import play.api.libs.json.{JsError, JsSuccess, JsValue, Json}
+import play.api.libs.json._ // JSON library
+import play.api.libs.json.Reads._ // Custom validation helpers
+import play.api.libs.functional.syntax._ // Combinator syntax
 
 object ProcessResultsUtils extends Serializable {
   private val LOGGER = LoggerFactory.getLogger("ProcessResultsUtils")
@@ -116,7 +119,7 @@ object ProcessResultsUtils extends Serializable {
     }
     val bloodTestsDF = spark.sql(newQuery.get).toDF().filter(row => anyNotNull(row))
     if (debugMode) {
-      bloodTestsDF.show(1000)
+      bloodTestsDF.show(10)
     }
     val profilesDF = loadTableDFFromConfig(null, spark, config, "patientsProfiles")
     if (debugMode) {
@@ -152,24 +155,25 @@ object ProcessResultsUtils extends Serializable {
 
     createJoinDataFrame(spark, query, config, testType)
     val queryOnJoinTables = "SELECT patientId, date, %s FROM joined WHERE socialId=\"%s\"".format(testType, patientSSN)
-    val patientBloodTestsDF = spark.sql(queryOnJoinTables).toDF().filter(row => anyNotNull(row))
+    var patientBloodTestsDF = spark.sql(queryOnJoinTables).toDF().filter(row => anyNotNull(row))
     if (debugMode) {
       patientBloodTestsDF.limit(10).show(false)
       patientBloodTestsDF.printSchema
       patientBloodTestsDF.explain(true)
     }
+    patientBloodTestsDF = patientBloodTestsDF.withColumnRenamed(testType, "value").drop(Constants.SUBJECT_ID_COL_NAME).distinct()
     patientBloodTestsDF.toJSON.collect.mkString("[", ",", "]")
   }
 
   def getAvgBloodTestsTestTypeCompilantResult (spark: SparkSession, query:String, config: Configuration, testType: String, avgTestType: String,
-                                               startAgeRange: Int, endAgeRange: Int) : String = {
+                                               origtestType: String, startAgeRange: Int, endAgeRange: Int) : String = {
     val todayDate =  java.time.LocalDate.now
     val minBirthDate = todayDate.minusYears(endAgeRange)
     val maxBirthDate = todayDate.minusYears(startAgeRange)
     createJoinDataFrame(spark, query, config, testType)
 
     val queryOnJoinTables = "SELECT "+avgTestType+" FROM joined where birthDate > \""+minBirthDate+"\" AND birthDate < \""+maxBirthDate +"\""
-    val patientBloodTestsDF = spark.sql(queryOnJoinTables).toDF().filter(row => anyNotNull(row))
+    var patientBloodTestsDF = spark.sql(queryOnJoinTables).toDF().filter(row => anyNotNull(row))
     if (debugMode) {
       println ("Range: " + startAgeRange + " " + endAgeRange)
       println (queryOnJoinTables)
@@ -178,7 +182,7 @@ object ProcessResultsUtils extends Serializable {
       patientBloodTestsDF.explain(true)
     }
     patientBloodTestsDF.show(false)
-    patientBloodTestsDF.toJSON.collect.mkString("[", ",", "]")
+    patientBloodTestsDF = patientBloodTestsDF.withColumnRenamed(avgTestType, "value")
+    patientBloodTestsDF.toJSON.collect.mkString(",")
   }
-
 }
