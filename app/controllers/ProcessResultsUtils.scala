@@ -13,7 +13,7 @@ object ProcessResultsUtils extends Serializable {
   var debugMode = false
 
   def setDebugMode (debug: Boolean) : Unit = {
-      debugMode = debug;
+    debugMode = debug;
   }
 
   def anyNotNull(row: Row): Boolean = {
@@ -38,7 +38,7 @@ object ProcessResultsUtils extends Serializable {
   def loadTableDFFromConfig(tableFilePrefix : String, spark: SparkSession, config: Configuration,
                             dataConfigName: String): DataFrame = {
     LOGGER.info("PloadTableDFFromConfig")
-   
+
     val connInfo = config.get[String](dataConfigName)
     if (connInfo.contains("s3a")) {
       var dataDF: DataFrame = null
@@ -46,6 +46,7 @@ object ProcessResultsUtils extends Serializable {
       dataDF = spark.read.parquet(connInfo)
       return dataDF
     }
+    //Use jdbc connection:
     val url = config.get[String]("db.mysql.url")
     val user = config.get[String]("db.mysql.username")
     val pass = config.get[String]("db.mysql.password")
@@ -55,9 +56,9 @@ object ProcessResultsUtils extends Serializable {
   }
 
 
-  def handleTable (spark: SparkSession, config: Configuration,
-                   dataConfigName: String) : Unit = {
-    LOGGER.info("handleTable")
+  def addTableToSpark (spark: SparkSession, config: Configuration,
+                       dataConfigName: String) : Unit = {
+    LOGGER.info("addTableToSpark")
     var tableDF = loadTableDFFromConfig(null, spark, config, dataConfigName)
     var sparkName = dataConfigName.toString()
     if (dataConfigName.toString().contains("clauses")) {
@@ -68,34 +69,6 @@ object ProcessResultsUtils extends Serializable {
       println("============= " + sparkName + " ===============")
       tableDF.show(false)
     }
-  }
-
-
-
-
-  def getPatientDetailsCompilantResult (spark: SparkSession, query:String, config: Configuration): String =
-  {
-
-    val json: JsValue = Json.parse(query)
-    val table: String = new String("table")
-    var index: Integer = 0;
-    var cond = true;
-    while (cond) {
-      var tableKey = table + index.toString
-      index = index + 1
-      val tableConfigName = (json \ tableKey).validate[String]
-      tableConfigName match {
-        case s: JsSuccess[String] => handleTable(spark, config, s.get);
-        case e: JsError => cond = false
-      }
-    }
-    val newQuery = (json \ "newQuery").validate[String]
-    if (debugMode) {
-      println("the re-written query: " + newQuery.get)
-    }
-    val resultDataDF = spark.sql(newQuery.get).toDF().filter(row => anyNotNull(row))
-    resultDataDF.toJSON.collect.mkString("[", ",", "]")
-
   }
 
   def createJoinDataFrame (spark: SparkSession, query:String, config: Configuration, testType: String): Unit = {
@@ -109,7 +82,7 @@ object ProcessResultsUtils extends Serializable {
       index = index + 1
       val tableConfigName = (json \ tableKey).validate[String]
       tableConfigName match {
-        case s: JsSuccess[String] => handleTable(spark, config, s.get);
+        case s: JsSuccess[String] => addTableToSpark(spark, config, s.get);
         case e: JsError => cond = false
       }
     }
@@ -119,39 +92,24 @@ object ProcessResultsUtils extends Serializable {
     }
     val bloodTestsDF = spark.sql(newQuery.get).toDF().filter(row => anyNotNull(row))
     if (debugMode) {
-      bloodTestsDF.show(10)
+      bloodTestsDF.show(false)
     }
     val profilesDF = loadTableDFFromConfig(null, spark, config, "patientsProfiles")
     if (debugMode) {
-      profilesDF.show()
+      profilesDF.show(false)
     }
-    //val joinedDF = bloodTestsDF.join(profilesDF, "patientId", "left_outer")
-    var joinedDF = bloodTestsDF.join(profilesDF, bloodTestsDF.col(Constants.SUBJECT_ID_COL_NAME).equalTo(profilesDF.col(Constants.SUBJECT_ID_COL_NAME)), "left_outer")
+    //TODO: check if inner join can be applied
+    var joinedDF = bloodTestsDF.join(profilesDF, bloodTestsDF.col(Constants.SUBJECT_ID_COL_NAME).
+      equalTo(profilesDF.col(Constants.SUBJECT_ID_COL_NAME)), "left_outer")
     joinedDF = joinedDF.drop(profilesDF.col(Constants.SUBJECT_ID_COL_NAME))
     joinedDF.createOrReplaceTempView("joined")
     if (debugMode) {
-      joinedDF.show(100)
+      joinedDF.show(false)
     }
   }
 
-  def getAllBloodTestsTestTypeCompilantResult (spark: SparkSession, query:String, config: Configuration, testType: String,
-                                               patientSSN: String): String = {
-
-    createJoinDataFrame(spark, query, config, testType)
-    val queryOnJoinTables = "WITH joined AS (SELECT %s , patientId, date, socialId FROM joined S WHERE date=(SELECT max(DATE) FROM joined where socialId=S.socialId)) SELECT date, socialId, %s FROM joined WHERE socialId=\"%s\"".format(testType, testType, patientSSN);
-    val patientBloodTestsDF = spark.sql(queryOnJoinTables).toDF().filter(row => anyNotNull(row))
-    if (debugMode) {
-      println ("----------------------------")
-      println(queryOnJoinTables);
-      patientBloodTestsDF.limit(10).show(false)
-      patientBloodTestsDF.printSchema
-      //      patientBloodTestsDF.explain(true)
-    }
-    patientBloodTestsDF.toJSON.collect.mkString("[", ",", "]")
-  }
-
-  def getBloodTestsTestTypeCompilantResult (spark: SparkSession, query:String, config: Configuration, testType: String,
-                                            patientSSN: String): String = {
+  def getBloodTestsComponentCompilantResult (spark: SparkSession, query:String, config: Configuration, testType: String,
+                                             patientSSN: String): String = {
 
     createJoinDataFrame(spark, query, config, testType)
     val queryOnJoinTables = "SELECT patientId, date, %s FROM joined WHERE socialId=\"%s\"".format(testType, patientSSN)
@@ -161,6 +119,7 @@ object ProcessResultsUtils extends Serializable {
       patientBloodTestsDF.printSchema
       patientBloodTestsDF.explain(true)
     }
+    //Adjust output to blueprint
     patientBloodTestsDF = patientBloodTestsDF.withColumnRenamed(testType, "value").drop(Constants.SUBJECT_ID_COL_NAME).distinct()
     patientBloodTestsDF.toJSON.collect.mkString("[", ",", "]")
   }
@@ -181,7 +140,7 @@ object ProcessResultsUtils extends Serializable {
       patientBloodTestsDF.printSchema
       patientBloodTestsDF.explain(true)
     }
-    patientBloodTestsDF.show(false)
+    //Adjust output to blueprint
     patientBloodTestsDF = patientBloodTestsDF.withColumnRenamed(avgTestType, "value")
     patientBloodTestsDF.toJSON.collect.mkString(",")
   }
