@@ -60,7 +60,7 @@ import scala.concurrent.ExecutionContext
 class EHealthVDCController @Inject() (config: Configuration, initService: Init, ws: WSClient) extends InjectedController {
   private val LOGGER = LoggerFactory.getLogger("EHealthVDCController")
 
-  def sendRequestToEnforcmentEngine (query:String, purpose: String, requesterId: String, url:String): String = {
+  private def sendRequestToEnforcmentEngine (query:String, purpose: String, requesterId: String, url:String): String = {
     val data = Json.obj(
       "query" -> query,
       "purpose" -> purpose,
@@ -79,14 +79,12 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
   @ApiOperation(nickname = "getAllValuesForBloodTestComponent",
     value = "Get timeseries of patient's blood test component",
     notes =  "This method returns the collected values for a specific blood test component of a patient (identified by his SSN), to be used by medical doctors",
-    response = classOf[models.BloodTestComponents], responseContainer = "List", httpMethod = "GET")
+    response = classOf[models.BloodTestComponentValue], responseContainer = "List", httpMethod = "GET")
   @ApiResponses(Array(
     new ApiResponse(code = 404, message = "Patient not found")))
   def getAllValuesForBloodTestComponent(@ApiParam(value = "SSN", required = true, allowMultiple = false) socialId: String,
-                    @ApiParam(value = "requesterId", required = true,
-                      allowMultiple = false) requesterId: String,
-                    @ApiParam(value = "component", required = true,
-                      allowMultiple = false) testType: String)= Action.async {
+                                        @ApiParam(value = "component", required = true,
+                                          allowMultiple = false) testType: String)= Action.async {
     implicit request =>
       val spark = initService.getSparkSessionInstance
       val patientSSN = socialId
@@ -101,9 +99,9 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
 
       if (config.has("policy.enforcement.play.url")) {
         val url: String = config.get[String]("policy.enforcement.play.url")
-        val response = sendRequestToEnforcmentEngine(queryToEngine, "Treatment", requesterId, url)
+        val response = sendRequestToEnforcmentEngine(queryToEngine, request.headers("Purpose"), request.headers("RequesterId"), url)
 
-        val resultStr = ProcessResultsUtils.getBloodTestsComponentCompilantResult(spark, response,
+        val resultStr = ProcessDataUtils.getBloodTestsComponentCompilantResult(spark, response,
           config, newTestType, patientSSN)
         val json: JsValue = Json.parse(resultStr)
 
@@ -117,15 +115,15 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
   @ApiOperation(nickname = "getBloodTestComponentAverage",
     value = "Get average of component over an age range",
     notes =  "This method returns the average value for a specific blood test component in a specific age range, to be used by researchers. Since data are for researchers, patients' identifiers and quasi-identifiers won't be returned, making the output of this method anonymized.",
-    response = classOf[models.PatientAvg], responseContainer = "List", httpMethod = "GET")
+    response = classOf[models.ComponentAvg], responseContainer = "List", httpMethod = "GET")
   @ApiResponses(Array(
     new ApiResponse(code = 404, message = "Component never measured")))
   def getBloodTestComponentAverage(@ApiParam(value = "component", required = true,
     allowMultiple = false) testType: String,
-                     @ApiParam(value = "startAgeRange", required = true,
-                       allowMultiple = false) startAgeRange: Int,
-                     @ApiParam(value = "endAgeRange", required = true,
-                       allowMultiple = false) endAgeRange: Int) = Action.async {
+                                   @ApiParam(value = "startAgeRange", required = true,
+                                     allowMultiple = false) startAgeRange: Int,
+                                   @ApiParam(value = "endAgeRange", required = true,
+                                     allowMultiple = false) endAgeRange: Int) = Action.async {
     implicit request =>
       val spark = initService.getSparkSessionInstance
       val queryObject = request.body
@@ -144,9 +142,9 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
 
       if (config.has("policy.enforcement.play.url")) {
         val url: String = config.get[String]("policy.enforcement.play.url")
-        val response = sendRequestToEnforcmentEngine(queryToEngine, "Research", "", url)
+        val response = sendRequestToEnforcmentEngine(queryToEngine, request.headers("Purpose"), "", url)
 
-        val newJsonObj = ProcessResultsUtils.getAvgBloodTestsTestTypeCompilantResult(spark, response,
+        val newJsonObj = ProcessDataUtils.getAvgBloodTestsTestTypeCompilantResult(spark, response,
           config, newTestType, avgTestType, origtestType, startAgeRange, endAgeRange)
 
         val json: JsValue = Json.parse(newJsonObj)

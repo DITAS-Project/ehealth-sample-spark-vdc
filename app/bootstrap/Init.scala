@@ -9,14 +9,14 @@ import javax.inject.Singleton
 import play.api.Configuration
 import play.api.Logger
 import play.api.inject.ApplicationLifecycle
-import controllers.ProcessResultsUtils
+import controllers.ProcessDataUtils
 
 @Singleton
 class Init @Inject() (lifecycle: ApplicationLifecycle, config: Configuration) {
 
   /**
-   * On start load the  SparkSession
-   */
+    * On start load the  SparkSession
+    */
   private var sparkSession = SparkSession.builder
     .master(config.get[String]("spark.master"))
     .appName(config.get[String]("spark.app.name"))
@@ -30,7 +30,7 @@ class Init @Inject() (lifecycle: ApplicationLifecycle, config: Configuration) {
     .getOrCreate()
   Logger.info("Starting VDCMethods application")
   if (config.has("debug.mode"))
-  ProcessResultsUtils.setDebugMode (config.get[Boolean]("debug.mode"))  
+    ProcessDataUtils.setDebugMode (config.get[Boolean]("debug.mode"))
 
   lifecycle.addStopHook { () =>
     Logger.info("Stopping VDCMethods application")

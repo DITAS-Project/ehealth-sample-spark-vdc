@@ -8,7 +8,7 @@ import play.api.libs.json._ // JSON library
 import play.api.libs.json.Reads._ // Custom validation helpers
 import play.api.libs.functional.syntax._ // Combinator syntax
 
-object ProcessResultsUtils extends Serializable {
+object ProcessDataUtils extends Serializable {
   private val LOGGER = LoggerFactory.getLogger("ProcessResultsUtils")
   var debugMode = false
 
@@ -61,8 +61,8 @@ object ProcessResultsUtils extends Serializable {
     LOGGER.info("addTableToSpark")
     var tableDF = loadTableDFFromConfig(null, spark, config, dataConfigName)
     var sparkName = dataConfigName.toString()
-    if (dataConfigName.toString().contains("clauses")) {
-      sparkName = "clauses"
+    if (dataConfigName.toString().contains(Constants.CLAUSES)) {
+      sparkName = Constants.CLAUSES
     }
     tableDF.createOrReplaceTempView(sparkName)
     if (debugMode) {
