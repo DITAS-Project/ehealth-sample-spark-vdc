@@ -14,7 +14,6 @@ object BloodTestComponentValue {
 }
 
 case class BloodTestComponentValue(@ApiModelProperty(value="Values of a blood test component",
-  example="[{date:1945-07-20,value:3.664},{date:2011-11-15,value:2.81611}]")
-                                   date: String, value: Double)
+  example="[{date:1945-07-20,value:3.664},{date:2011-11-15,value:2.81611}]") date: String, value: Double)
 
 

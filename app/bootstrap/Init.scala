@@ -9,7 +9,7 @@ import javax.inject.Singleton
 import play.api.Configuration
 import play.api.Logger
 import play.api.inject.ApplicationLifecycle
-import controllers.ProcessDataUtils
+import controllers.EHealthVDCController
 
 @Singleton
 class Init @Inject() (lifecycle: ApplicationLifecycle, config: Configuration) {
@@ -28,9 +28,8 @@ class Init @Inject() (lifecycle: ApplicationLifecycle, config: Configuration) {
     .config("spark.hadoop.fs.s3a.impl", config.get[String]("spark.hadoop.fs.s3a.impl"))
     .config("spark.hadoop.fs.AbstractFileSystem.s3a.impl", config.get[String]("spark.hadoop.fs.AbstractFileSystem.s3a.impl"))
     .getOrCreate()
+
   Logger.info("Starting VDCMethods application")
-  if (config.has("debug.mode"))
-    ProcessDataUtils.setDebugMode (config.get[Boolean]("debug.mode"))
 
   lifecycle.addStopHook { () =>
     Logger.info("Stopping VDCMethods application")

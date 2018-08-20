@@ -14,4 +14,4 @@ GET	/docs/*file	controllers.Assets.at(path="/public/lib/swagger-ui/", file)
 
 GET /patient/:socialId/blood-test/component/:testType controllers.EHealthVDCController.getAllValuesForBloodTestComponent(socialId: String, testType: String)
 
-GET /blood-test/component/:testType/average/$startAgeRange<[0-9]+>-$endAgeRange<[0-9]+>   controllers.EHealthVDCController.getBloodTestComponentAverage(testType: String, startAgeRange: Int, endAgeRange: Int)
+GET /blood-test/component/:testType/average/$startAgeRange<[0-9]+>-$endAgeRange<[0-9]+> controllers.EHealthVDCController.getBloodTestComponentAverage(testType: String, startAgeRange: Int, endAgeRange: Int)
