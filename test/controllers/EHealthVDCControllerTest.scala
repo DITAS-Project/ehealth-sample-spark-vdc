@@ -1,7 +1,6 @@
 import javax.inject.Inject
 
 import controllers.EHealthVDCController
-import models.Patient
 import play.api.i18n.Messages
 import play.api.mvc._
 import play.api.test._

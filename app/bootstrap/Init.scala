@@ -9,13 +9,14 @@ import javax.inject.Singleton
 import play.api.Configuration
 import play.api.Logger
 import play.api.inject.ApplicationLifecycle
+import controllers.EHealthVDCController
 
 @Singleton
 class Init @Inject() (lifecycle: ApplicationLifecycle, config: Configuration) {
 
   /**
-   * On start load the  SparkSession
-   */
+    * On start load the  SparkSession
+    */
   private var sparkSession = SparkSession.builder
     .master(config.get[String]("spark.master"))
     .appName(config.get[String]("spark.app.name"))
@@ -27,6 +28,7 @@ class Init @Inject() (lifecycle: ApplicationLifecycle, config: Configuration) {
     .config("spark.hadoop.fs.s3a.impl", config.get[String]("spark.hadoop.fs.s3a.impl"))
     .config("spark.hadoop.fs.AbstractFileSystem.s3a.impl", config.get[String]("spark.hadoop.fs.AbstractFileSystem.s3a.impl"))
     .getOrCreate()
+
   Logger.info("Starting VDCMethods application")
 
   lifecycle.addStopHook { () =>
