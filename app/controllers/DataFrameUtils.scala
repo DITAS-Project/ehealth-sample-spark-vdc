@@ -32,10 +32,10 @@ object DataFrameUtils {
     LOGGER.info("PloadTableDFFromConfig")
 
     val connInfo = config.get[String](dataConfigName)
-    val connType = connInfo+"_type"
+    val connTypeKey = dataConfigName+"_type"
+    val connType = config.get[String](connTypeKey)
     if (connType.equals("s3a")) {
       var dataDF: DataFrame = null
-
       dataDF = spark.read.parquet(connInfo)
       return dataDF
     } else if (connType.equals("jdbc")) {

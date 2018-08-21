@@ -55,12 +55,6 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
   private val LOGGER = LoggerFactory.getLogger("EHealthVDCController")
   var debugMode = false
 
-  def EHealthVDCController (): Unit = {
-    if (config.has("debug.mode")) {
-      debugMode = config.get[Boolean]("debug.mode")
-    }
-  }
-
   private def createDataAndProfileJoinDataFrame (spark: SparkSession, response:String, config: Configuration): Unit = {
 
     val bloodTestsCompliantDF: DataFrame = ProcessEnforcementEngineResponse.processResponse(spark, config, response,
@@ -131,6 +125,7 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
       val patientSSN = socialId
       var origtestType = testType
 
+      debugMode = initService.getDebugMode
       if (config.has("policy.enforcement.play.url")) {
         val url: String = config.get[String]("policy.enforcement.play.url")
         val response = sendRequestToEnforcmentEngine(request.headers("Purpose"),
@@ -171,7 +166,7 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
       val todayDate =  java.time.LocalDate.now
       val minBirthDate = todayDate.minusYears(endAgeRange)
       val maxBirthDate = todayDate.minusYears(startAgeRange)
-
+      debugMode = initService.getDebugMode
 
       if (config.has("policy.enforcement.play.url")) {
         val url: String = config.get[String]("policy.enforcement.play.url")

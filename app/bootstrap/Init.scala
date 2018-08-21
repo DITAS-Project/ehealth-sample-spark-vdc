@@ -29,6 +29,11 @@ class Init @Inject() (lifecycle: ApplicationLifecycle, config: Configuration) {
     .config("spark.hadoop.fs.AbstractFileSystem.s3a.impl", config.get[String]("spark.hadoop.fs.AbstractFileSystem.s3a.impl"))
     .getOrCreate()
 
+  private var debugMode = false
+  if (config.has("debug.mode")) {
+    debugMode = config.get[Boolean]("debug.mode")
+  }
+
   Logger.info("Starting VDCMethods application")
 
   lifecycle.addStopHook { () =>
@@ -39,6 +44,9 @@ class Init @Inject() (lifecycle: ApplicationLifecycle, config: Configuration) {
   def getSparkSessionInstance = {
     sparkSession
   }
+
+  def getDebugMode = {
+    debugMode
+  }
+
 }
-
-
