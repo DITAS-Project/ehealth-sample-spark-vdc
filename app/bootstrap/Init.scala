@@ -9,7 +9,6 @@ import javax.inject.Singleton
 import play.api.Configuration
 import play.api.Logger
 import play.api.inject.ApplicationLifecycle
-import controllers.EHealthVDCController
 
 @Singleton
 class Init @Inject() (lifecycle: ApplicationLifecycle, config: Configuration) {
@@ -37,6 +36,7 @@ class Init @Inject() (lifecycle: ApplicationLifecycle, config: Configuration) {
   Logger.info("Starting VDCMethods application")
 
   lifecycle.addStopHook { () =>
+    sparkSession.stop()
     Logger.info("Stopping VDCMethods application")
     Future.successful(sparkSession.stop())
   }

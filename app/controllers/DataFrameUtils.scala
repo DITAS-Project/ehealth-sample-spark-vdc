@@ -47,6 +47,7 @@ object DataFrameUtils {
         option("user", user).option("password", pass).load
       return jdbcDF
     }
+    LOGGER.error("unrecognized data frame connection type")
     spark.emptyDataFrame
   }
 

@@ -55,10 +55,12 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
   private val LOGGER = LoggerFactory.getLogger("EHealthVDCController")
   var debugMode = false
 
-  private def createDataAndProfileJoinDataFrame (spark: SparkSession, response:String, config: Configuration): Unit = {
+  private def createDataAndProfileJoinDataFrame (spark: SparkSession, response:String, config: Configuration): Boolean = {
 
     val bloodTestsCompliantDF: DataFrame = ProcessEnforcementEngineResponse.processResponse(spark, config, response,
       debugMode)
+    if (bloodTestsCompliantDF == spark.emptyDataFrame)
+      return false
     val profilesDF = DataFrameUtils.loadTableDFFromConfig(null, spark, config,
       "patientsProfiles")
     if (debugMode) {
@@ -72,11 +74,16 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
     if (debugMode) {
       joinedDF.show(false)
     }
+    true
   }
 
-  private def getCompilantResult (spark: SparkSession, query:String, config: Configuration,
+  private def getCompliantBloodTestsAndProfiles (spark: SparkSession, query:String, config: Configuration,
                                   queryOnJoinTables: String): DataFrame = {
-    createDataAndProfileJoinDataFrame(spark, query, config)
+    if (!createDataAndProfileJoinDataFrame(spark, query, config)) {
+      LOGGER.error("Error in createDataAndProfileJoinDataFrame")
+      return spark.emptyDataFrame
+    }
+
     var patientBloodTestsDF = spark.sql(queryOnJoinTables).toDF().filter(row => DataFrameUtils.anyNotNull(row))
     if (debugMode) {
       println (queryOnJoinTables)
@@ -87,7 +94,7 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
     patientBloodTestsDF
   }
 
-  private def sendRequestToEnforcmentEngine (purpose: String, requesterId: String, url:String, testType: String): String = {
+  private def sendRequestToEnforcmentEngine (purpose: String, requesterId: String, enforcementEngineURL:String, testType: String): String = {
     var newTestType:String = null
     if (testType.equals("cholesterol")) {
       newTestType = "cholesterol_total_value"
@@ -104,7 +111,7 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
       "blueprintId" -> "",
       "requesterId" -> requesterId
     )
-    val futureResponse = ws.url(url).addHttpHeaders("Content-Type" -> "application/json")
+    val futureResponse = ws.url(enforcementEngineURL).addHttpHeaders("Content-Type" -> "application/json")
       .addHttpHeaders("Accept" -> "application/json").withRequestTimeout(Duration.Inf).post(data)
 
     val res = Await.result(futureResponse, Duration.Inf)
@@ -126,23 +133,43 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
       var origtestType = testType
 
       debugMode = initService.getDebugMode
-      if (config.has("policy.enforcement.play.url")) {
-        val url: String = config.get[String]("policy.enforcement.play.url")
+      if (!config.has("policy.enforcement.play.url")) {
+        Future.successful(NotFound("Missing enforcement url"))
+      } else if (!origtestType.equals("cholesterol") &&
+        !origtestType.equals("antithrombin") &&
+        !origtestType.equals("fibrinogen")  &&
+        !origtestType.equals("haemoglobin") &&
+        !origtestType.equals("plateletCount") &&
+        !origtestType.equals("prothrombinTime") &&
+        !origtestType.equals("totalWhiteCellCount")) {
+        Future.successful(NotFound("Unknown blood type"))
+      } else{
+
+        val enforcementEngineURL: String = config.get[String]("policy.enforcement.play.url")
         val response = sendRequestToEnforcmentEngine(request.headers("Purpose"),
-          request.headers("RequesterId"), url, origtestType)
+          request.headers("RequesterId"), enforcementEngineURL, origtestType)
 
-        val queryOnJoinTables = "SELECT patientId, date, %s FROM joined WHERE socialId=\"%s\"".format(testType,
+        var newTestType:String = null;
+        if (testType.equals("cholesterol")) {
+          newTestType = "cholesterol_total_value"
+        } else {
+          newTestType = "%s_value".format(testType).replaceAll("\\.", "_")
+        }
+
+        val queryOnJoinTables = "SELECT patientId, date, %s FROM joined WHERE socialId=\"%s\"".format(newTestType,
           patientSSN)
-        var resultDF = getCompilantResult(spark, response, config, queryOnJoinTables)
+        var resultDF = getCompliantBloodTestsAndProfiles(spark, response, config, queryOnJoinTables)
+        if (resultDF == spark.emptyDataFrame) {
+          Future.successful(NotAcceptable("Error processing enforcement engine result"))
+        } else {
 
-        //Adjust output to blueprint
-        resultDF = resultDF.withColumnRenamed(testType, "value").drop(Constants.SUBJECT_ID_COL_NAME).distinct()
-        val resultStr = resultDF.toJSON.collect.mkString("[", ",", "]")
-        val json: JsValue = Json.parse(resultStr)
+          //Adjust output to blueprint
+          resultDF = resultDF.withColumnRenamed(newTestType, "value").drop(Constants.SUBJECT_ID_COL_NAME).distinct()
+          val resultStr = resultDF.toJSON.collect.mkString("[", ",", "]")
+          val json: JsValue = Json.parse(resultStr)
 
-        Future.successful(Ok(json))
-      } else {
-        Future.successful(NotFound("Missing url"))
+          Future.successful(Ok(json))
+        }
       }
   }
 
@@ -168,9 +195,23 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
       val maxBirthDate = todayDate.minusYears(startAgeRange)
       debugMode = initService.getDebugMode
 
-      if (config.has("policy.enforcement.play.url")) {
-        val url: String = config.get[String]("policy.enforcement.play.url")
-        val response = sendRequestToEnforcmentEngine(request.headers("Purpose"), "", url, testType)
+      if (!config.has("policy.enforcement.play.url")) {
+        Future.successful(NotFound("Missing enforcement url"))
+      }  else if (startAgeRange >= endAgeRange) {
+        Future.successful(NotFound("Wrong age range"))
+      } else if (!testType.equals("cholesterol") &&
+        !testType.equals("antithrombin") &&
+        !testType.equals("fibrinogen")  &&
+        !testType.equals("haemoglobin")  &&
+        !testType.equals("plateletCount") &&
+        !testType.equals("prothrombinTime") &&
+        !testType.equals("totalWhiteCellCount"))
+      {
+        Future.successful(NotFound("Unknown blood type"))
+
+      } else{
+        val enforcementEngineURL: String = config.get[String]("policy.enforcement.play.url")
+        val response = sendRequestToEnforcmentEngine(request.headers("Purpose"), "", enforcementEngineURL, testType)
 
         if (debugMode) {
           println("Range: " + startAgeRange + " " + endAgeRange)
@@ -183,15 +224,17 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
         }
         val queryOnJoinTables = "SELECT "+avgTestType+" FROM joined where birthDate > \""+minBirthDate+"\" AND birthDate < \""+maxBirthDate +"\""
 
-        var resultDF = getCompilantResult(spark, response, config, queryOnJoinTables)
-        //Adjust output to blueprint
-        resultDF = resultDF.withColumnRenamed(avgTestType, "value")
-        val newJsonObj = resultDF.toJSON.collect.mkString(",")
-        val json: JsValue = Json.parse(newJsonObj)
+        var resultDF = getCompliantBloodTestsAndProfiles(spark, response, config, queryOnJoinTables)
+        if (resultDF == spark.emptyDataFrame) {
+          Future.successful(NotAcceptable("Error processing enforcement engine result"))
+        } else {
+          //Adjust output to blueprint
+          resultDF = resultDF.withColumnRenamed(avgTestType, "value")
+          val newJsonObj = resultDF.toJSON.collect.mkString(",")
+          val json: JsValue = Json.parse(newJsonObj)
 
-        Future.successful(Ok(json))
-      } else {
-        Future.successful(NotFound("Missing config file"))
+          Future.successful(Ok(json))
+        }
       }
   }
 }

@@ -22,14 +22,20 @@ object ProcessEnforcementEngineResponse {
     val table: String = new String("table")
     var index: Integer = 0;
     var cond = true;
+    var tableKey: String = null
     while (cond) {
-      var tableKey = table + index.toString
+      tableKey = table + index.toString
       index = index + 1
       val tableConfigName = (json \ tableKey).validate[String]
       tableConfigName match {
         case s: JsSuccess[String] => DataFrameUtils.addTableToSpark(spark, config, s.get)
         case e: JsError => cond = false
       }
+    }
+    //fail if there is an error parsing the Enforcement Engine
+    if ((json \ tableKey).isDefined) {
+      LOGGER.error("Error in processing enforcement Engine result")
+      return spark.emptyDataFrame
     }
     val newQuery = (json \ "newQuery").validate[String]
     query = newQuery.get
