@@ -12,6 +12,6 @@ sudo docker rm -f ehealth-sample-spark-vdc || true
 sudo docker pull ditas/ehealth-sample-spark-vdc:latest
 sudo docker run -p 50005:9000 -d  -ti --entrypoint=sh --name ehealth-sample-spark-vdc ditas/ehealth-sample-spark-vdc:latest
 sudo docker exec -d -i ehealth-sample-spark-vdc sh -c 'cat > /app/ehealth-sample-spark-vdc-1.0-SNAPSHOT/conf/applicationEhealth.conf' < applicationEhealth.conf
-sudo docker exec -d ehealth-sample-spark-vdc /app/ehealth-sample-spark-vdc-1.0-SNAPSHOT/bin/ehealth-sample-spark-vdc -Dplay.http.secret.key='wspl4r' -Dconfig.file='app/ehealth-sample-spark-vdc-1.0-SNAPSHOT/conf/applicationEhealth.conf'
+sudo docker exec -d -i ehealth-sample-spark-vdc /app/ehealth-sample-spark-vdc-1.0-SNAPSHOT/bin/ehealth-sample-spark-vdc -Dplay.http.secret.key='wspl4r' -Dconfig.file='app/ehealth-sample-spark-vdc-1.0-SNAPSHOT/conf/applicationEhealth.conf'
 ENDSSH
 
