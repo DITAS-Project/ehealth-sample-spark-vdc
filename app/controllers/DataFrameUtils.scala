@@ -8,17 +8,17 @@ import play.api.Configuration
 object DataFrameUtils {
   private val LOGGER = LoggerFactory.getLogger("DataFrameUtils")
 
-  def anyNotNull(row: Row): Boolean = {
+  def anyNotNull(row: Row, columnName: String = Constants.SUBJECT_ID_COL_NAME): Boolean = {
     val len = row.length
 
     var i = 0
     var fieldNames = row.schema.fieldNames
     //print patientId if its the only col
-    if (len == 1 && fieldNames(0).equals(Constants.SUBJECT_ID_COL_NAME))
+    if (len == 1 && fieldNames(0).equals(columnName))
       return true
     //skip patientId
     while (i < len) {
-      if (!fieldNames(i).equals(Constants.SUBJECT_ID_COL_NAME) && !row.isNullAt(i)) {
+      if (!fieldNames(i).equals(columnName) && !row.isNullAt(i)) {
         return true
       }
       i += 1

@@ -48,6 +48,7 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext
 import bootstrap.Init
 import io.swagger.annotations._
+import org.apache.spark.sql.functions._
 
 // TODO thread pool!!!
 @Api("EHealthVDCController")
@@ -112,7 +113,7 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
       "requesterId" -> requesterId
     )
     val futureResponse = ws.url(enforcementEngineURL).addHttpHeaders("Content-Type" -> "application/json")
-      .addHttpHeaders("Accept" -> "application/json").withRequestTimeout(Duration.Inf).post(data)
+      .addHttpHeaders("accept" -> "application/json").withRequestTimeout(Duration.Inf).post(data)
 
     val res = Await.result(futureResponse, Duration.Inf)
     res.body[String]
@@ -165,10 +166,16 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
 
           //Adjust output to blueprint
           resultDF = resultDF.withColumnRenamed(newTestType, "value").drop(Constants.SUBJECT_ID_COL_NAME).distinct()
-          val resultStr = resultDF.toJSON.collect.mkString("[", ",", "]")
-          val json: JsValue = Json.parse(resultStr)
+          resultDF = resultDF.orderBy("date").filter(row => DataFrameUtils.anyNotNull(row, Constants.DATE))
+          val res = resultDF.takeAsList(1)
+          if (res.size == 0)
+            Future.successful(NotFound("No results were found"))
+          else {
+            val resultStr = resultDF.toJSON.collect.mkString("[", ",", "]")
+            val json: JsValue = Json.parse(resultStr)
 
-          Future.successful(Ok(json))
+            Future.successful(Ok(json))
+          }
         }
       }
   }
@@ -230,10 +237,18 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
         } else {
           //Adjust output to blueprint
           resultDF = resultDF.withColumnRenamed(avgTestType, "value")
-          val newJsonObj = resultDF.toJSON.collect.mkString(",")
-          val json: JsValue = Json.parse(newJsonObj)
+          if (debugMode)
+            resultDF.show(1)
+          val res = resultDF.takeAsList(1)
+          println (res)
+          if (res.size == 0)
+            Future.successful(NotFound("No blood tests were found in the range of ages"))
+          else {
+            val newJsonObj = resultDF.toJSON.collect.mkString(",")
+            val json: JsValue = Json.parse(newJsonObj)
 
-          Future.successful(Ok(json))
+            Future.successful(Ok(json))
+          }
         }
       }
   }
