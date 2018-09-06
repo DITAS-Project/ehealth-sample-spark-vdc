@@ -55,17 +55,18 @@ import org.apache.spark.sql.functions._
 class EHealthVDCController @Inject() (config: Configuration, initService: Init, ws: WSClient) extends InjectedController {
   private val LOGGER = LoggerFactory.getLogger("EHealthVDCController")
   var debugMode = false
+  var dfShowLen = 10
 
   private def createDataAndProfileJoinDataFrame (spark: SparkSession, response:String, config: Configuration): Boolean = {
 
     val bloodTestsCompliantDF: DataFrame = ProcessEnforcementEngineResponse.processResponse(spark, config, response,
-      debugMode)
+      debugMode, dfShowLen)
     if (bloodTestsCompliantDF == spark.emptyDataFrame)
       return false
     val profilesDF = DataFrameUtils.loadTableDFFromConfig(null, spark, config,
       "patientsProfiles")
     if (debugMode) {
-      profilesDF.show(false)
+      profilesDF.distinct().show(dfShowLen, false)
     }
     //TODO: check if inner join can be applied
     var joinedDF = bloodTestsCompliantDF.join(profilesDF, bloodTestsCompliantDF.col(Constants.SUBJECT_ID_COL_NAME).
@@ -73,13 +74,13 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
     joinedDF = joinedDF.drop(profilesDF.col(Constants.SUBJECT_ID_COL_NAME))
     joinedDF.createOrReplaceTempView("joined")
     if (debugMode) {
-      joinedDF.show(false)
+      joinedDF.distinct().show(dfShowLen, false)
     }
     true
   }
 
   private def getCompliantBloodTestsAndProfiles (spark: SparkSession, query:String, config: Configuration,
-                                  queryOnJoinTables: String): DataFrame = {
+                                                 queryOnJoinTables: String): DataFrame = {
     if (!createDataAndProfileJoinDataFrame(spark, query, config)) {
       LOGGER.error("Error in createDataAndProfileJoinDataFrame")
       return spark.emptyDataFrame
@@ -88,7 +89,7 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
     var patientBloodTestsDF = spark.sql(queryOnJoinTables).toDF().filter(row => DataFrameUtils.anyNotNull(row))
     if (debugMode) {
       println (queryOnJoinTables)
-      patientBloodTestsDF.limit(10).show(false)
+      patientBloodTestsDF.distinct().show(dfShowLen, false)
       patientBloodTestsDF.printSchema
       patientBloodTestsDF.explain(true)
     }
@@ -134,6 +135,7 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
       var origtestType = testType
 
       debugMode = initService.getDebugMode
+      dfShowLen = initService.getDfShowLen
       if (!config.has("policy.enforcement.play.url")) {
         Future.successful(NotFound("Missing enforcement url"))
       } else if (!origtestType.equals("cholesterol") &&
@@ -201,6 +203,7 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
       val minBirthDate = todayDate.minusYears(endAgeRange)
       val maxBirthDate = todayDate.minusYears(startAgeRange)
       debugMode = initService.getDebugMode
+      dfShowLen = initService.getDfShowLen
 
       if (!config.has("policy.enforcement.play.url")) {
         Future.successful(NotFound("Missing enforcement url"))
@@ -238,9 +241,8 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
           //Adjust output to blueprint
           resultDF = resultDF.withColumnRenamed(avgTestType, "value")
           if (debugMode)
-            resultDF.show(1)
+            resultDF.distinct().show(dfShowLen, false)
           val res = resultDF.takeAsList(1)
-          println (res)
           if (res.size == 0)
             Future.successful(NotFound("No blood tests were found in the range of ages"))
           else {

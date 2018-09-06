@@ -29,8 +29,12 @@ class Init @Inject() (lifecycle: ApplicationLifecycle, config: Configuration) {
     .getOrCreate()
 
   private var debugMode = false
+  private var dfShowLen = 10
   if (config.has("debug.mode")) {
     debugMode = config.get[Boolean]("debug.mode")
+  }
+  if (config.has("df.show.len")) {
+    dfShowLen = config.get[Int]("df.show.len")
   }
 
   Logger.info("Starting VDCMethods application")
@@ -49,4 +53,7 @@ class Init @Inject() (lifecycle: ApplicationLifecycle, config: Configuration) {
     debugMode
   }
 
+  def getDfShowLen = {
+    dfShowLen
+  }
 }
