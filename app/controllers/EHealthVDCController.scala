@@ -69,11 +69,10 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
       profilesDF.distinct().show(dfShowLen, false)
     }
     //TODO: check if inner join can be applied
-    var joinedDF = bloodTestsCompliantDF.join(profilesDF, bloodTestsCompliantDF.col(Constants.SUBJECT_ID_COL_NAME).
-      equalTo(profilesDF.col(Constants.SUBJECT_ID_COL_NAME)), "left_outer")
-    joinedDF = joinedDF.drop(profilesDF.col(Constants.SUBJECT_ID_COL_NAME))
+    var joinedDF = bloodTestsCompliantDF.join(profilesDF, Seq(Constants.SUBJECT_ID_COL_NAME), "left_outer")
     joinedDF.createOrReplaceTempView("joined")
     if (debugMode) {
+      println ("===========" + "JOINED bloodTests and profiles" + "===========")
       joinedDF.distinct().show(dfShowLen, false)
     }
     true
