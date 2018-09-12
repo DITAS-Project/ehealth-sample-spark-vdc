@@ -148,35 +148,45 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
         Future.successful(NotFound("Unknown blood type"))
       } else{
 
-        val enforcementEngineURL: String = config.get[String]("policy.enforcement.play.url")
-        val response = sendRequestToEnforcmentEngine(request.headers("Purpose"),
-          request.headers("RequesterId"), enforcementEngineURL, origtestType)
-
-        var newTestType:String = null;
-        if (testType.equals("cholesterol")) {
-          newTestType = "cholesterol_total_value"
-        } else {
-          newTestType = "%s_value".format(testType).replaceAll("\\.", "_")
-        }
-
-        val queryOnJoinTables = "SELECT patientId, date, %s FROM joined WHERE socialId=\"%s\"".format(newTestType,
-          patientSSN)
-        var resultDF = getCompliantBloodTestsAndProfiles(spark, response, config, queryOnJoinTables)
-        if (resultDF == spark.emptyDataFrame) {
-          Future.successful(NotAcceptable("Error processing enforcement engine result"))
+        if (!request.headers("Purpose").equals("Marketing")  &&
+          !request.headers("Purpose").equals("MedicalTreatment") &&
+          !request.headers("Purpose").equals("Research") &&
+          !request.headers("Purpose").equals("NutritionConsultation") &&
+          !request.headers("Purpose").equals("MedicalResearch") &&
+          !request.headers("Purpose").equals("NutritionalResearch")) {
+          Future.successful(NotFound("Unknown purpose"))
         } else {
 
-          //Adjust output to blueprint
-          resultDF = resultDF.withColumnRenamed(newTestType, "value").drop(Constants.SUBJECT_ID_COL_NAME).distinct()
-          resultDF = resultDF.orderBy("date").filter(row => DataFrameUtils.anyNotNull(row, Constants.DATE))
-          val res = resultDF.takeAsList(1)
-          if (res.size == 0)
-            Future.successful(NotFound("No results were found"))
-          else {
-            val resultStr = resultDF.toJSON.collect.mkString("[", ",", "]")
-            val json: JsValue = Json.parse(resultStr)
+          val enforcementEngineURL: String = config.get[String]("policy.enforcement.play.url")
+          val response = sendRequestToEnforcmentEngine(request.headers("Purpose"),
+            request.headers("RequesterId"), enforcementEngineURL, origtestType)
 
-            Future.successful(Ok(json))
+          var newTestType: String = null;
+          if (testType.equals("cholesterol")) {
+            newTestType = "cholesterol_total_value"
+          } else {
+            newTestType = "%s_value".format(testType).replaceAll("\\.", "_")
+          }
+
+          val queryOnJoinTables = "SELECT patientId, date, %s FROM joined WHERE socialId=\"%s\"".format(newTestType,
+            patientSSN)
+          var resultDF = getCompliantBloodTestsAndProfiles(spark, response, config, queryOnJoinTables)
+          if (resultDF == spark.emptyDataFrame) {
+            Future.successful(NotAcceptable("Error processing enforcement engine result"))
+          } else {
+
+            //Adjust output to blueprint
+            resultDF = resultDF.withColumnRenamed(newTestType, "value").drop(Constants.SUBJECT_ID_COL_NAME).distinct()
+            resultDF = resultDF.orderBy("date").filter(row => DataFrameUtils.anyNotNull(row, Constants.DATE))
+            val res = resultDF.takeAsList(1)
+            if (res.size == 0)
+              Future.successful(NotFound("No results were found"))
+            else {
+              val resultStr = resultDF.toJSON.collect.mkString("[", ",", "]")
+              val json: JsValue = Json.parse(resultStr)
+
+              Future.successful(Ok(json))
+            }
           }
         }
       }
@@ -219,37 +229,46 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
       {
         Future.successful(NotFound("Unknown blood type"))
 
-      } else{
-        val enforcementEngineURL: String = config.get[String]("policy.enforcement.play.url")
-        val response = sendRequestToEnforcmentEngine(request.headers("Purpose"), "", enforcementEngineURL, testType)
-
-        if (debugMode) {
-          println("Range: " + startAgeRange + " " + endAgeRange)
-        }
-
-        if (testType.equals("cholesterol")) {
-          avgTestType = "avg(cholesterol_total_value)"
+      } else {
+        if (!request.headers("Purpose").equals("Marketing") &&
+          !request.headers("Purpose").equals("MedicalTreatment") &&
+          !request.headers("Purpose").equals("Research") &&
+          !request.headers("Purpose").equals("NutritionConsultation") &&
+          !request.headers("Purpose").equals("MedicalResearch") &&
+          !request.headers("Purpose").equals("NutritionalResearch")) {
+          Future.successful(NotFound("Unknown purpose"))
         } else {
-          avgTestType = "avg("+"%s_value".format(testType).replaceAll("\\.", "_")+")"
-        }
-        val queryOnJoinTables = "SELECT "+avgTestType+" FROM joined where birthDate > \""+minBirthDate+"\" AND birthDate < \""+maxBirthDate +"\""
+          val enforcementEngineURL: String = config.get[String]("policy.enforcement.play.url")
+          val response = sendRequestToEnforcmentEngine(request.headers("Purpose"), "", enforcementEngineURL, testType)
 
-        var resultDF = getCompliantBloodTestsAndProfiles(spark, response, config, queryOnJoinTables)
-        if (resultDF == spark.emptyDataFrame) {
-          Future.successful(NotAcceptable("Error processing enforcement engine result"))
-        } else {
-          //Adjust output to blueprint
-          resultDF = resultDF.withColumnRenamed(avgTestType, "value")
-          if (debugMode)
-            resultDF.distinct().show(dfShowLen, false)
-          val res = resultDF.takeAsList(1)
-          if (res.size == 0)
-            Future.successful(NotFound("No blood tests were found in the range of ages"))
-          else {
-            val newJsonObj = resultDF.toJSON.collect.mkString(",")
-            val json: JsValue = Json.parse(newJsonObj)
+          if (debugMode) {
+            println("Range: " + startAgeRange + " " + endAgeRange)
+          }
 
-            Future.successful(Ok(json))
+          if (testType.equals("cholesterol")) {
+            avgTestType = "avg(cholesterol_total_value)"
+          } else {
+            avgTestType = "avg(" + "%s_value".format(testType).replaceAll("\\.", "_") + ")"
+          }
+          val queryOnJoinTables = "SELECT " + avgTestType + " FROM joined where birthDate > \"" + minBirthDate + "\" AND birthDate < \"" + maxBirthDate + "\""
+
+          var resultDF = getCompliantBloodTestsAndProfiles(spark, response, config, queryOnJoinTables)
+          if (resultDF == spark.emptyDataFrame) {
+            Future.successful(NotAcceptable("Error processing enforcement engine result"))
+          } else {
+            //Adjust output to blueprint
+            resultDF = resultDF.withColumnRenamed(avgTestType, "value")
+            if (debugMode)
+              resultDF.distinct().show(dfShowLen, false)
+            val res = resultDF.takeAsList(1)
+            if (res.size == 0)
+              Future.successful(NotFound("No blood tests were found in the range of ages"))
+            else {
+              val newJsonObj = resultDF.toJSON.collect.mkString(",")
+              val json: JsValue = Json.parse(newJsonObj)
+
+              Future.successful(Ok(json))
+            }
           }
         }
       }
