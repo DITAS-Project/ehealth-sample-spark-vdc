@@ -1,6 +1,6 @@
 package controllers
 
-import controllers.ProcessEnforcementEngineResponse.debugMode
+import controllers.EnforcementEngineResponseProcessor.debugMode
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import org.slf4j.LoggerFactory
 import play.api.Configuration

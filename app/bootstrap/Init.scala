@@ -30,6 +30,10 @@ class Init @Inject() (lifecycle: ApplicationLifecycle, config: Configuration) {
 
   private var debugMode = false
   private var dfShowLen = 10
+  private var enforcementEngineURL = ""
+  if (config.has("policy.enforcement.play.url")) {
+    enforcementEngineURL = config.get[String]("policy.enforcement.play.url")
+  }
   if (config.has("debug.mode")) {
     debugMode = config.get[Boolean]("debug.mode")
   }
@@ -55,5 +59,9 @@ class Init @Inject() (lifecycle: ApplicationLifecycle, config: Configuration) {
 
   def getDfShowLen = {
     dfShowLen
+  }
+
+  def getEnforcementEngineURL = {
+    enforcementEngineURL
   }
 }

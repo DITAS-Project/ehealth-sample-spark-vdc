@@ -54,12 +54,13 @@ import org.apache.spark.sql.functions._
 @Api("EHealthVDCController")
 class EHealthVDCController @Inject() (config: Configuration, initService: Init, ws: WSClient) extends InjectedController {
   private val LOGGER = LoggerFactory.getLogger("EHealthVDCController")
-  var debugMode = false
-  var dfShowLen = 10
+  var debugMode = initService.getDebugMode
+  var dfShowLen = initService.getDfShowLen
+  var enforcementEngineURL = initService.getEnforcementEngineURL
 
   private def createDataAndProfileJoinDataFrame (spark: SparkSession, response:String, config: Configuration): Boolean = {
 
-    val bloodTestsCompliantDF: DataFrame = ProcessEnforcementEngineResponse.processResponse(spark, config, response,
+    val bloodTestsCompliantDF: DataFrame = EnforcementEngineResponseProcessor.processResponse(spark, config, response,
       debugMode, dfShowLen)
     if (bloodTestsCompliantDF == spark.emptyDataFrame)
       return false
@@ -133,9 +134,7 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
       val patientSSN = socialId
       var origtestType = testType
 
-      debugMode = initService.getDebugMode
-      dfShowLen = initService.getDfShowLen
-      if (!config.has("policy.enforcement.play.url")) {
+      if (enforcementEngineURL.equals("")) {
         Future.successful(NotFound("Missing enforcement url"))
       } else if (!origtestType.equals("cholesterol") &&
         !origtestType.equals("antithrombin") &&
@@ -146,7 +145,6 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
         !origtestType.equals("totalWhiteCellCount")) {
         Future.successful(NotFound("Unknown blood type"))
       } else{
-
         if (!request.headers("Purpose").equals("Marketing")  &&
           !request.headers("Purpose").equals("MedicalTreatment") &&
           !request.headers("Purpose").equals("Research") &&
@@ -156,7 +154,6 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
           Future.successful(NotFound("Unknown purpose"))
         } else {
 
-          val enforcementEngineURL: String = config.get[String]("policy.enforcement.play.url")
           val response = sendRequestToEnforcmentEngine(request.headers("Purpose"),
             request.headers("RequesterId"), enforcementEngineURL, origtestType)
 
@@ -211,10 +208,8 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
       val todayDate =  java.time.LocalDate.now
       val minBirthDate = todayDate.minusYears(endAgeRange)
       val maxBirthDate = todayDate.minusYears(startAgeRange)
-      debugMode = initService.getDebugMode
-      dfShowLen = initService.getDfShowLen
-
-      if (!config.has("policy.enforcement.play.url")) {
+      
+      if (enforcementEngineURL.equals("")) {
         Future.successful(NotFound("Missing enforcement url"))
       }  else if (startAgeRange >= endAgeRange) {
         Future.successful(NotFound("Wrong age range"))
@@ -237,7 +232,6 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
           !request.headers("Purpose").equals("NutritionalResearch")) {
           Future.successful(NotFound("Unknown purpose"))
         } else {
-          val enforcementEngineURL: String = config.get[String]("policy.enforcement.play.url")
           val response = sendRequestToEnforcmentEngine(request.headers("Purpose"), "", enforcementEngineURL, testType)
 
           if (debugMode) {

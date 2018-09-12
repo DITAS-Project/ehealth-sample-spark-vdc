@@ -1,6 +1,6 @@
 package controllers
 
-import controllers.ProcessEnforcementEngineResponse.debugMode
+import controllers.EnforcementEngineResponseProcessor.debugMode
 import play.api.libs.json.{JsError, JsSuccess, JsValue, Json}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.slf4j.LoggerFactory
@@ -8,7 +8,7 @@ import play.api.Configuration
 
 import scala.collection.mutable.Stack
 
-object ProcessEnforcementEngineResponse {
+object EnforcementEngineResponseProcessor {
   private val LOGGER = LoggerFactory.getLogger("ProcessEnforcementEngineResponse")
   var response : String = ""
   var query: String = ""
