@@ -60,8 +60,14 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
 
   private def createDataAndProfileJoinDataFrame (spark: SparkSession, response:String, config: Configuration): Boolean = {
 
-    val bloodTestsCompliantDF: DataFrame = EnforcementEngineResponseProcessor.processResponse(spark, config, response,
-      debugMode, dfShowLen)
+    var bloodTestsCompliantDF: DataFrame = null
+    try {
+      bloodTestsCompliantDF = EnforcementEngineResponseProcessor.processResponse(spark, config, response,
+        debugMode, dfShowLen)
+    } catch {
+      case e: Exception => println("exception caught: " + e)
+        return false
+    }
     if (bloodTestsCompliantDF == spark.emptyDataFrame)
       return false
     val profilesDF = DataFrameUtils.loadTableDFFromConfig(null, spark, config,
@@ -134,16 +140,12 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
       val patientSSN = socialId
       var origtestType = testType
 
-      if (enforcementEngineURL.equals("")) {
+      if (!request.headers.hasHeader("Purpose")) {
+        Future.successful(NotFound("Missing purpose"))
+      } else if (!request.headers.hasHeader("RequesterId")) {
+        Future.successful(NotFound("Missing RequesterId"))
+      } else if (enforcementEngineURL.equals("")) {
         Future.successful(NotFound("Missing enforcement url"))
-      } else if (!origtestType.equals("cholesterol") &&
-        !origtestType.equals("antithrombin") &&
-        !origtestType.equals("fibrinogen")  &&
-        !origtestType.equals("haemoglobin") &&
-        !origtestType.equals("plateletCount") &&
-        !origtestType.equals("prothrombinTime") &&
-        !origtestType.equals("totalWhiteCellCount")) {
-        Future.successful(NotFound("Unknown blood type"))
       } else{
 
         val response = sendRequestToEnforcmentEngine(request.headers("Purpose"),
@@ -166,15 +168,10 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
           //Adjust output to blueprint
           resultDF = resultDF.withColumnRenamed(newTestType, "value").drop(Constants.SUBJECT_ID_COL_NAME).distinct()
           resultDF = resultDF.orderBy("date").filter(row => DataFrameUtils.anyNotNull(row, Constants.DATE))
-          val res = resultDF.takeAsList(1)
-          if (res.size == 0)
-            Future.successful(NotFound("No results were found"))
-          else {
             val resultStr = resultDF.toJSON.collect.mkString("[", ",", "]")
-            val json: JsValue = Json.parse(resultStr)
 
-            Future.successful(Ok(json))
-          }
+            Future.successful(Ok(resultStr))
+
 
         }
       }
@@ -200,21 +197,13 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
       val todayDate =  java.time.LocalDate.now
       val minBirthDate = todayDate.minusYears(endAgeRange)
       val maxBirthDate = todayDate.minusYears(startAgeRange)
-      
-      if (enforcementEngineURL.equals("")) {
+
+      if (!request.headers.hasHeader("Purpose")) {
+        Future.successful(NotFound("Missing purpose"))
+      } else if (enforcementEngineURL.equals("")) {
         Future.successful(NotFound("Missing enforcement url"))
       }  else if (startAgeRange >= endAgeRange) {
         Future.successful(NotFound("Wrong age range"))
-      } else if (!testType.equals("cholesterol") &&
-        !testType.equals("antithrombin") &&
-        !testType.equals("fibrinogen")  &&
-        !testType.equals("haemoglobin")  &&
-        !testType.equals("plateletCount") &&
-        !testType.equals("prothrombinTime") &&
-        !testType.equals("totalWhiteCellCount"))
-      {
-        Future.successful(NotFound("Unknown blood type"))
-
       } else {
         val response = sendRequestToEnforcmentEngine(request.headers("Purpose"), "", enforcementEngineURL, testType)
 
@@ -237,16 +226,10 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
           resultDF = resultDF.withColumnRenamed(avgTestType, "value")
           if (debugMode)
             resultDF.distinct().show(dfShowLen, false)
-          val res = resultDF.takeAsList(1)
-          if (res.size == 0)
-            Future.successful(NotFound("No blood tests were found in the range of ages"))
-          else {
-            val newJsonObj = resultDF.toJSON.collect.mkString(",")
-            val json: JsValue = Json.parse(newJsonObj)
 
-            Future.successful(Ok(json))
-          }
+          val newJsonObj = resultDF.toJSON.collect.mkString(",")
 
+          Future.successful(Ok(newJsonObj))
         }
       }
   }
