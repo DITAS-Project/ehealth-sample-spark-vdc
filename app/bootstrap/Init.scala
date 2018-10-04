@@ -14,8 +14,8 @@ import play.api.inject.ApplicationLifecycle
 class Init @Inject() (lifecycle: ApplicationLifecycle, config: Configuration) {
 
   /**
-   * On start load the  SparkSession
-   */
+    * On start load the  SparkSession
+    */
   private var sparkSession = SparkSession.builder
     .master(config.get[String]("spark.master"))
     .appName(config.get[String]("spark.app.name"))
@@ -27,9 +27,24 @@ class Init @Inject() (lifecycle: ApplicationLifecycle, config: Configuration) {
     .config("spark.hadoop.fs.s3a.impl", config.get[String]("spark.hadoop.fs.s3a.impl"))
     .config("spark.hadoop.fs.AbstractFileSystem.s3a.impl", config.get[String]("spark.hadoop.fs.AbstractFileSystem.s3a.impl"))
     .getOrCreate()
+
+  private var debugMode = false
+  private var dfShowLen = 10
+  private var enforcementEngineURL = ""
+  if (config.has("policy.enforcement.play.url")) {
+    enforcementEngineURL = config.get[String]("policy.enforcement.play.url")
+  }
+  if (config.has("debug.mode")) {
+    debugMode = config.get[Boolean]("debug.mode")
+  }
+  if (config.has("df.show.len")) {
+    dfShowLen = config.get[Int]("df.show.len")
+  }
+
   Logger.info("Starting VDCMethods application")
 
   lifecycle.addStopHook { () =>
+    sparkSession.stop()
     Logger.info("Stopping VDCMethods application")
     Future.successful(sparkSession.stop())
   }
@@ -37,6 +52,16 @@ class Init @Inject() (lifecycle: ApplicationLifecycle, config: Configuration) {
   def getSparkSessionInstance = {
     sparkSession
   }
+
+  def getDebugMode = {
+    debugMode
+  }
+
+  def getDfShowLen = {
+    dfShowLen
+  }
+
+  def getEnforcementEngineURL = {
+    enforcementEngineURL
+  }
 }
-
-
