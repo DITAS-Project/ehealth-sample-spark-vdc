@@ -29,7 +29,7 @@ object DataFrameUtils {
 
   def loadTableDFFromConfig(tableFilePrefix : String, spark: SparkSession, config: Configuration,
                             dataConfigName: String): DataFrame = {
-    LOGGER.info("PloadTableDFFromConfig")
+    LOGGER.info("loadTableDFFromConfig")
 
     val connInfo = config.get[String](dataConfigName)
     val connTypeKey = dataConfigName+"_type"
@@ -57,6 +57,10 @@ object DataFrameUtils {
     LOGGER.info("addTableToSpark")
     var tableDF = loadTableDFFromConfig(null, spark, config, dataConfigName)
     var sparkName = dataConfigName.toString()
+    //There is an assumption that only one clauses table exists when executing the query returned from the engine.
+    //The new query will contain clauses.column_name expression (for example, clauses.x1c9f199c)
+    //It is because the engine's rules contains such clauses.column_name expression and the new query is generated
+    //from the rules,
     if (dataConfigName.toString().contains(Constants.CLAUSES)) {
       sparkName = Constants.CLAUSES
     }
