@@ -12,7 +12,6 @@ import play.api.inject.ApplicationLifecycle
 
 @Singleton
 class Init @Inject() (lifecycle: ApplicationLifecycle, config: Configuration) {
-
   /**
     * On start load the  SparkSession
     */
@@ -20,6 +19,7 @@ class Init @Inject() (lifecycle: ApplicationLifecycle, config: Configuration) {
     .master(config.get[String]("spark.master"))
     .appName(config.get[String]("spark.app.name"))
     .config("spark.jars", config.get[String]("spark.jars"))
+    .config("spark.sql.shuffle.partitions", config.get[String]("spark.sql.shuffle.partitions"))
     .config("spark.hadoop.fs.s3a.endpoint", config.get[String]("spark.hadoop.fs.s3a.endpoint"))
     .config("spark.hadoop.fs.s3a.access.key", config.get[String]("spark.hadoop.fs.s3a.access.key"))
     .config("spark.hadoop.fs.s3a.secret.key", config.get[String]("spark.hadoop.fs.s3a.secret.key"))
