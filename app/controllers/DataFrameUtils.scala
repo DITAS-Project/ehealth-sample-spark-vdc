@@ -53,7 +53,7 @@ object DataFrameUtils {
 
 
   def addTableToSpark (spark: SparkSession, config: Configuration,
-                       dataConfigName: String, dfShowLen: Int) : Unit = {
+                       dataConfigName: String, showDataFrameLength: Int) : Unit = {
     LOGGER.info("addTableToSpark")
     var tableDF = loadTableDFFromConfig(null, spark, config, dataConfigName)
     var sparkName = dataConfigName.toString()
@@ -67,7 +67,7 @@ object DataFrameUtils {
     tableDF.createOrReplaceTempView(sparkName)
     if (debugMode) {
       println("============= " + sparkName + " ===============")
-      tableDF.distinct().show(dfShowLen, false)
+      tableDF.distinct().show(showDataFrameLength, false)
     }
   }
 

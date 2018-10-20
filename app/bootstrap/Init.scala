@@ -29,7 +29,7 @@ class Init @Inject() (lifecycle: ApplicationLifecycle, config: Configuration) {
     .getOrCreate()
 
   private var debugMode = false
-  private var dfShowLen = 10
+  private var showDataFrameLength = 10
   private var enforcementEngineURL = ""
   if (config.has("policy.enforcement.play.url")) {
     enforcementEngineURL = config.get[String]("policy.enforcement.play.url")
@@ -38,7 +38,7 @@ class Init @Inject() (lifecycle: ApplicationLifecycle, config: Configuration) {
     debugMode = config.get[Boolean]("debug.mode")
   }
   if (config.has("df.show.len")) {
-    dfShowLen = config.get[Int]("df.show.len")
+    showDataFrameLength = config.get[Int]("df.show.len")
   }
 
   Logger.info("Starting VDCMethods application")
@@ -58,7 +58,7 @@ class Init @Inject() (lifecycle: ApplicationLifecycle, config: Configuration) {
   }
 
   def getDfShowLen = {
-    dfShowLen
+    showDataFrameLength
   }
 
   def getEnforcementEngineURL = {

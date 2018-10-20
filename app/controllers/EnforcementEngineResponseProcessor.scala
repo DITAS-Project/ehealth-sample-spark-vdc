@@ -16,7 +16,8 @@ object EnforcementEngineResponseProcessor {
   var queryOnTables: String = ""
   var debugMode: Boolean = false
 
-  def processResponse (spark: SparkSession, config: Configuration, response:String, debugMode:Boolean, dfShowLen: Int): DataFrame = {
+  def processResponse (spark: SparkSession, config: Configuration, response:String, debugMode:Boolean,
+                       showDataFrameLength: Int): DataFrame = {
     this.debugMode = debugMode
     val json: JsValue = Json.parse(response)
     val table: String = new String("table")
@@ -28,7 +29,7 @@ object EnforcementEngineResponseProcessor {
       index = index + 1
       val tableConfigName = (json \ tableKey).validate[String]
       tableConfigName match {
-        case s: JsSuccess[String] => DataFrameUtils.addTableToSpark(spark, config, s.get, dfShowLen)
+        case s: JsSuccess[String] => DataFrameUtils.addTableToSpark(spark, config, s.get, showDataFrameLength)
         case e: JsError => cond = false
       }
     }
@@ -45,7 +46,7 @@ object EnforcementEngineResponseProcessor {
     val bloodTestsDF: DataFrame = spark.sql(query).toDF().filter(row => DataFrameUtils.anyNotNull(row))
     if (debugMode) {
       println (query)
-      bloodTestsDF.distinct().show(dfShowLen, false)
+      bloodTestsDF.distinct().show(showDataFrameLength, false)
       bloodTestsDF.printSchema
       bloodTestsDF.explain(true)
     }

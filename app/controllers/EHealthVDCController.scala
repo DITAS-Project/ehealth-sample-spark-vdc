@@ -55,7 +55,7 @@ import org.apache.spark.sql.functions._
 class EHealthVDCController @Inject() (config: Configuration, initService: Init, ws: WSClient) extends InjectedController {
   private val LOGGER = LoggerFactory.getLogger("EHealthVDCController")
   var debugMode = initService.getDebugMode
-  var dfShowLen = initService.getDfShowLen
+  var showDataFrameLength = initService.getDfShowLen
   var enforcementEngineURL = initService.getEnforcementEngineURL
 
   private def createDataAndProfileJoinDataFrame (spark: SparkSession, response:String, config: Configuration): Boolean = {
@@ -63,7 +63,7 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
     var bloodTestsCompliantDF: DataFrame = null
     try {
       bloodTestsCompliantDF = EnforcementEngineResponseProcessor.processResponse(spark, config, response,
-        debugMode, dfShowLen)
+        debugMode, showDataFrameLength)
     } catch {
       case e: Exception => LOGGER.error("Exception in process engine response " + e);
         return false
@@ -73,14 +73,14 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
     val profilesDF = DataFrameUtils.loadTableDFFromConfig(null, spark, config,
       "patientsProfiles")
     if (debugMode) {
-      profilesDF.distinct().show(dfShowLen, false)
+      profilesDF.distinct().show(showDataFrameLength, false)
     }
     //This is inner join
     var joinedDF = bloodTestsCompliantDF.join(profilesDF, Constants.SUBJECT_ID_COL_NAME)
     joinedDF.createOrReplaceTempView("joined")
     if (debugMode) {
       println ("===========" + "JOINED bloodTests and profiles" + "===========")
-      joinedDF.distinct().show(dfShowLen, false)
+      joinedDF.distinct().show(showDataFrameLength, false)
     }
     true
   }
@@ -95,7 +95,7 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
     var patientBloodTestsDF = spark.sql(queryOnJoinTables).toDF().filter(row => DataFrameUtils.anyNotNull(row))
     if (debugMode) {
       println (queryOnJoinTables)
-      patientBloodTestsDF.distinct().show(dfShowLen, false)
+      patientBloodTestsDF.distinct().show(showDataFrameLength, false)
       patientBloodTestsDF.printSchema
       patientBloodTestsDF.explain(true)
     }
@@ -249,7 +249,7 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
             //Adjust output to blueprint
             resultDF = resultDF.withColumnRenamed(avgTestType, "value")
             if (debugMode)
-              resultDF.distinct().show(dfShowLen, false)
+              resultDF.distinct().show(showDataFrameLength, false)
 
             val newJsonObj = resultDF.toJSON.collect.mkString(",")
 
