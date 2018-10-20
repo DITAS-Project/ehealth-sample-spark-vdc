@@ -10,18 +10,16 @@ object DataFrameUtils {
 
   def anyNotNull(row: Row, columnName: String = Constants.SUBJECT_ID_COL_NAME): Boolean = {
     val len = row.length
-
     var i = 0
     var fieldNames = row.schema.fieldNames
     //print patientId if its the only col
     if (len == 1 && fieldNames(0).equals(columnName))
       return true
     //skip patientId
-    while (i < len) {
+    for( i <- 0 until len){
       if (!fieldNames(i).equals(columnName) && !row.isNullAt(i)) {
         return true
       }
-      i += 1
     }
     false
   }
@@ -54,7 +52,6 @@ object DataFrameUtils {
 
   def addTableToSpark (spark: SparkSession, config: Configuration,
                        dataConfigName: String, showDataFrameLength: Int) : Unit = {
-    LOGGER.info("addTableToSpark")
     var tableDF = loadTableDFFromConfig(null, spark, config, dataConfigName)
     var sparkName = dataConfigName.toString()
     //There is an assumption that only one clauses table exists when executing the query returned from the engine.
@@ -66,7 +63,7 @@ object DataFrameUtils {
     }
     tableDF.createOrReplaceTempView(sparkName)
     if (debugMode) {
-      println("============= " + sparkName + " ===============")
+      LOGGER.info("============= " + sparkName + " ===============")
       tableDF.distinct().show(showDataFrameLength, false)
     }
   }

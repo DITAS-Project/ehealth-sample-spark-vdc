@@ -37,8 +37,8 @@ class Init @Inject() (lifecycle: ApplicationLifecycle, config: Configuration) {
   if (config.has("debug.mode")) {
     debugMode = config.get[Boolean]("debug.mode")
   }
-  if (config.has("df.show.len")) {
-    showDataFrameLength = config.get[Int]("df.show.len")
+  if (config.has("show.dataframe.len")) {
+    showDataFrameLength = config.get[Int]("show.dataframe.len")
   }
 
   Logger.info("Starting VDCMethods application")
