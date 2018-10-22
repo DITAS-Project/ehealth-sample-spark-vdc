@@ -12,7 +12,8 @@ object ComponentAvg {
   implicit val patientInfoReads: Reads[ComponentAvg] = Json.reads[ComponentAvg]
 }
 
-case class ComponentAvg(@ApiModelProperty(value="The average of component ", example="{value:2.722}")
-                        value: String)
+case class ComponentAvg(@ApiModelProperty (value="The average value of the component in the provided age range",
+  example = "2.722")
+                        value: Double)
 
 

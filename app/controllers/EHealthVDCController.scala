@@ -137,13 +137,14 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
 
   @ApiOperation(nickname = "getAllValuesForBloodTestComponent",
     value = "Get timeseries of patient's blood test component",
-    notes =  "This method returns the collected values for a specific blood test component of a patient (identified by his SSN), to be used by medical doctors",
+    notes =  "This method returns the collected values for a specific blood test component of a patient (identified " +
+      "by his SSN), to be used by medical doctors",
     response = classOf[models.BloodTestComponentValue], responseContainer = "List", httpMethod = "GET")
   @ApiResponses(Array(
     new ApiResponse(code = 400, message = "Invalid parameters supplied"),
     new ApiResponse(code = 500, message = "Error processing result")))
-  def getAllValuesForBloodTestComponent(@ApiParam(value = "SSN", required = true, allowMultiple = false) socialId: String,
-                                        @ApiParam(value = "component", required = true,
+  def getAllValuesForBloodTestComponent(@ApiParam(value = "The patient's SSN", required = true, allowMultiple = false) socialId: String,
+                                        @ApiParam(value = "The blood test component", required = true,
                                           allowMultiple = false) testType: String)= Action.async {
     implicit request =>
       val spark = initService.getSparkSessionInstance
@@ -157,7 +158,6 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
       } else if (enforcementEngineURL.equals("")) {
         Future.successful(BadRequest("Missing enforcement url"))
       } else{
-
 
         val response = sendRequestToEnforcmentEngine(request.headers("Purpose"),
           request.headers("RequesterId"), enforcementEngineURL, origtestType)
@@ -199,15 +199,15 @@ class EHealthVDCController @Inject() (config: Configuration, initService: Init, 
   @ApiOperation(nickname = "getBloodTestComponentAverage",
     value = "Get average of component over an age range",
     notes =  "This method returns the average value for a specific blood test component in a specific age range, to be used by researchers. Since data are for researchers, patients' identifiers and quasi-identifiers won't be returned, making the output of this method anonymized.",
-    response = classOf[models.ComponentAvg], responseContainer = "List", httpMethod = "GET")
+    response = classOf[models.ComponentAvg], httpMethod = "GET")
   @ApiResponses(Array(
     new ApiResponse(code = 400, message = "Invalid parameters supplied"),
     new ApiResponse(code = 500, message = "Error processing result")))
-  def getBloodTestComponentAverage(@ApiParam(value = "component", required = true,
+  def getBloodTestComponentAverage(@ApiParam(value = "The blood test component", required = true,
     allowMultiple = false) testType: String,
-                                   @ApiParam(value = "startAgeRange", required = true,
+                                   @ApiParam(value = "Start age range", required = true,
                                      allowMultiple = false) startAgeRange: Int,
-                                   @ApiParam(value = "endAgeRange", required = true,
+                                   @ApiParam(value = "End age range", required = true,
                                      allowMultiple = false) endAgeRange: Int) = Action.async {
     implicit request =>
       val spark = initService.getSparkSessionInstance

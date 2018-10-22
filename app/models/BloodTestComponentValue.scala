@@ -13,7 +13,8 @@ object BloodTestComponentValue {
   implicit val patientInfoReads: Reads[BloodTestComponentValue] = Json.reads[BloodTestComponentValue]
 }
 
-case class BloodTestComponentValue(@ApiModelProperty(value="Values of a blood test component",
-  example="[{date:1945-07-20,value:3.664},{date:2011-11-15,value:2.81611}]") date: String, value: Double)
+case class BloodTestComponentValue(@ApiModelProperty(value="The date in which the blood test was taken",
+  example="1945-07-20") date: String, @ApiModelProperty(value="Value of a blood test component",
+                                     example="3.664")value: Double)
 
 
