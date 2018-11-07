@@ -22,11 +22,11 @@ RUN set -x \
                 openjdk8-jre="$JAVA_ALPINE_VERSION"
 RUN [ "$JAVA_HOME" = "$(docker-java-home)" ]
 ENV WORKINGDIR /
-COPY target/universal/ehealth-sample-spark-vdc-1.0-SNAPSHOT.tgz /app/ehealth-sample-spark-vdc-1.0-SNAPSHOT.tgz
+COPY target/universal/ehealth-sample-spark-vdc-1.0.tgz /app/ehealth-sample-spark-vdc-1.0.tgz
 EXPOSE 9000
 RUN /bin/sh -c "apk add --no-cache bash"
 RUN apk --update add tar
 RUN ["apk", "add", "--update", "bash", "libc6-compat", "curl"]
-RUN ["tar", "xvzf", "app/ehealth-sample-spark-vdc-1.0-SNAPSHOT.tgz", "-C", "app"]
-ENTRYPOINT ["app/ehealth-sample-spark-vdc-1.0-SNAPSHOT/bin/ehealth-sample-spark-vdc",  "-Dplay.http.secret.key='wspl4r'", "-Dconfig.file=app/ehealth-sample-spark-vdc-1.0-SNAPSHOT/conf/application.conf"]
+RUN ["tar", "xvzf", "app/ehealth-sample-spark-vdc-1.0.tgz", "-C", "app"]
+ENTRYPOINT ["app/ehealth-sample-spark-vdc-1.0/bin/ehealth-sample-spark-vdc",  "-Dplay.http.secret.key='wspl4r'", "-Dconfig.file=app/ehealth-sample-spark-vdc-1.0/conf/application.conf"]
 
