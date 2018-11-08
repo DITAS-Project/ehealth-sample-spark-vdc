@@ -57,7 +57,7 @@ tar xvfz ehealth-sample-spark-vdc-1.0.tgz
 ```
 ## Execution:
 
-The conf/reference.conf file provide defaults; they are overridden by any settings defined in the application.conf file. Please, copy the contents of the file conf/reference.conf to conf/application.conf and replace with the correct values of your runtime.
+The conf/reference.conf file provides default configuration parameters; they are overridden by any settings defined in the conf/application.conf file. Please, copy the contents of the file conf/reference.conf to conf/application.conf and replace with the correct values of your runtime.
 
 * Use the following command to run the application.
 
@@ -68,8 +68,9 @@ app/ehealth-sample-spark-vdc-1.0/bin/ehealth-sample-spark-vdc -Dplay.http.secret
 * Example call:
 ```
  curl -X GET "http://<hostname>:9000/blood-test/component/fibrinogen/average/3-18" -H "accept: application/json" -H "Content-Type: application/json"  -H "Purpose: Research"
-```
 
+ curl -X GET "http://<hostname>:9000/patient/<socialId>/blood-test/component/fibrinogen"  -H "Content-Type: application/json" -H "RequesterId: <RequesterId>" -H "Purpose: MedicalTreatment "
+```
 ## Documentation:
 ```
 Go to http://<hostname>:9000/docs/swagger.json
