@@ -17,19 +17,20 @@
  */
 package models
 
-import play.api.libs.json.Json
+import play.api.mvc._
+import play.api.libs.json._
+import play.api.libs.functional.syntax._
+import play.api.libs.json.{Json, Reads, Writes}
+import play.api.libs.functional.syntax._
+import io.swagger.annotations._
 
-case class Location(depth: Double,
-    temperature: Double,
-    cast: Long,
-    cruise: String,
-    latitude: Double,
-    longitude: Double) {
-
+object ComponentAvg {
+  implicit val patientInfoWrites: Writes[ComponentAvg] = Json.writes[ComponentAvg]
+  implicit val patientInfoReads: Reads[ComponentAvg] = Json.reads[ComponentAvg]
 }
 
-object Location {
-  implicit val locationFormat = Json.format[Location]
+case class ComponentAvg(@ApiModelProperty (value="The average value of the component in the provided age range",
+  example = "2.722")
+                        value: Double)
 
-}
 

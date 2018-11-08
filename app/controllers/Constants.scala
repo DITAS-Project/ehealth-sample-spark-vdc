@@ -15,21 +15,11 @@
  * 
  * This is being developed for the DITAS Project: https://www.ditas-project.eu/
  */
-package models
+package controllers
 
-import play.api.libs.json.Json
 
-case class Location(depth: Double,
-    temperature: Double,
-    cast: Long,
-    cruise: String,
-    latitude: Double,
-    longitude: Double) {
-
+object Constants {
+  val SUBJECT_ID_COL_NAME = "patientId"
+  val CLAUSES = "clauses"
+  val DATE = "date"
 }
-
-object Location {
-  implicit val locationFormat = Json.format[Location]
-
-}
-

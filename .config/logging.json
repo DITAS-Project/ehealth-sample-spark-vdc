@@ -1,0 +1,8 @@
+{
+    "Port":8484,
+    "ElasticSearchURL":"http://31.171.247.156:9200",
+    "VDCName":"ehealthdockermonitor",
+    "Endpoint":"http://127.0.0.1:9000",
+    "verbose":true
+}
+

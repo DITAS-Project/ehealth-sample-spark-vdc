@@ -17,29 +17,21 @@
  */
 package models
 
-import io.swagger.annotations._
+import play.api.mvc._
+import play.api.libs.json._
+import play.api.libs.functional.syntax._
 import play.api.libs.json.{Json, Reads, Writes}
+import play.api.libs.functional.syntax._
+import java.util.{Calendar, Date}
+import io.swagger.annotations._
 
-object Patient {
-  implicit val patientWrites: Writes[Patient] = Json.writes[Patient]
-  implicit val patientReads: Reads[Patient] = Json.reads[Patient]
+object BloodTestComponentValue {
+  implicit val patientInfoWrites: Writes[BloodTestComponentValue] = Json.writes[BloodTestComponentValue]
+  implicit val patientInfoReads: Reads[BloodTestComponentValue] = Json.reads[BloodTestComponentValue]
 }
 
-
-case class Patient(                   
-	patientId: String, 
-	socialId: String, 
-	addressCity: String, 
-	addressRoad: String, 
-	addressRoadNumber: String, 
-	birthCity: String, 
-	nationality: String, 
-	job: String, 
-	schoolYears: Int, 
-	birthDate: String, 
-	gender: String, 
-	name: String, 
-	surname: String	
-)
+case class BloodTestComponentValue(@ApiModelProperty(value="The date in which the blood test was taken",
+  example="1945-07-20") date: String, @ApiModelProperty(value="Value of a blood test component",
+                                     example="3.664")value: Double)
 
 

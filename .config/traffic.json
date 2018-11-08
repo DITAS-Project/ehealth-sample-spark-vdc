@@ -1,0 +1,8 @@
+{
+    "ElasticSearchURL":"http://31.171.247.156:9200",
+    "VDCName":"ehealthdockermonitor",
+    "windowTime":10,
+    "ignore":[".*:9200","127.0.0.1:8484"],
+    "components":{}
+}
+

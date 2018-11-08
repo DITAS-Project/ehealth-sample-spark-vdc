@@ -9,5 +9,8 @@ ssh -i /opt/keypairs/ditas-testbed-keypair.pem cloudsigma@31.171.247.162 << 'END
 # || true - "docker stop" failt with exit status 1 if image doen't exists, what makes the Pipeline fail. the "|| true" forces the command to exit with 0.
 sudo docker rm -f ehealth-sample-spark-vdc || true
 sudo docker pull ditas/ehealth-sample-spark-vdc:latest
-sudo docker run -p 50005:9000 -d --name ehealth-sample-spark-vdc ditas/ehealth-sample-spark-vdc:latest
+sudo docker create --name  ehealth-sample-spark-vdc  -p 50005:9000 ditas/ehealth-sample-spark-vdc:latest
+sudo docker cp /home/cloudsigma/configurations/ehealth-sample-spark-vdc/applicationEhealth.conf  ehealth-sample-spark-vdc:/app/ehealth-sample-spark-vdc-1.0-SNAPSHOT/conf/application.conf
+sudo docker start ehealth-sample-spark-vdc
 ENDSSH
+
